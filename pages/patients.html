@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Patients</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- Add/Edit Patient Modal -->
+<div class="modal-overlay" id="patientModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Nouveau Patient</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('patientModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="patientId">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nom complet *</label>
+          <input id="fName" class="form-control" placeholder="Ahmed Bensalem">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone *</label>
+          <input id="fPhone" class="form-control" placeholder="0555 123 456">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="fEmail" type="email" class="form-control" placeholder="patient@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date de naissance</label>
+          <input id="fDob" type="date" class="form-control">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Genre</label>
+          <select id="fGender" class="form-control">
+            <option value="">— Sélectionner —</option>
+            <option value="male">Masculin</option>
+            <option value="female">Féminin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Groupe sanguin</label>
+          <select id="fBlood" class="form-control">
+            <option value="">— Sélectionner —</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adresse</label>
+        <input id="fAddress" class="form-control" placeholder="Rue, Ville, Wilaya">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Allergies</label>
+        <input id="fAllergies" class="form-control" placeholder="Pénicilline, arachides...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Maladies chroniques</label>
+        <input id="fChronic" class="form-control" placeholder="Diabète, hypertension...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('patientModal')">Annuler</button>
+      <button id="saveBtn" class="btn btn-primary" onclick="savePatient()">
+        <i class="ti ti-device-floppy"></i> Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Patient Detail Modal (shown when tapping a row, esp. on small screens where some columns are hidden) -->
+<div class="modal-overlay" id="patientDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Détails du patient</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('patientDetailModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="patientDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('patientDetailModal')">Fermer</button>
+      <button class="btn btn-primary" onclick="closeModal('patientDetailModal'); openEdit(currentDetailId)">
+        <i class="ti ti-edit"></i> Modifier
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('patients', 'Patients');
+const user = Auth.getUser();
+const isStaff = ['admin','secretary'].includes(user?.role);
+const isAdmin = user?.role === 'admin';
+
+// Add button in topbar — only staff can create walk-in patient records
+document.getElementById('topbarActions').innerHTML = isStaff ? `
+  <button class="btn btn-primary" onclick="openAdd()">
+    <i class="ti ti-plus"></i> Nouveau patient
+  </button>` : '';
+
+let allPatients = [];
+
+async function loadPatients(search = '') {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input id="searchInput" placeholder="Rechercher par nom ou téléphone..." value="${search}" oninput="handleSearch(this.value)">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Liste des patients</span>
+        <span id="countBadge" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const url = search ? `/patients?search=${encodeURIComponent(search)}` : '/patients';
+    const res = await api('GET', url);
+    allPatients = res.data || [];
+    document.getElementById('countBadge').textContent = res.total ?? allPatients.length;
+    renderTable(allPatients);
+  } catch (e) {
+    content.querySelector('.table-wrap').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+let searchTimer;
+function handleSearch(val) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadPatients(val), 400);
+}
+
+function renderTable(patients) {
+  const wrap = document.querySelector('.table-wrap');
+  if (!patients.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="ti ti-users"></i><p>Aucun patient trouvé</p></div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>#</th><th>Nom</th><th>Téléphone</th><th class="col-hide-sm">Âge</th>
+        <th class="col-hide-sm">Groupe sanguin</th><th class="col-hide-sm">Genre</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${patients.map(p => `
+          <tr onclick="openDetails(${p.id})">
+            <td><span style="color:var(--text-muted)">${p.id}</span></td>
+            <td>
+              <div style="font-weight:500">${p.name}</div>
+              <div style="font-size:11px;color:var(--text-sub)">${p.email || ''}</div>
+            </td>
+            <td>${p.phone}</td>
+            <td class="col-hide-sm">${p.age != null ? p.age + ' ans' : '—'}</td>
+            <td class="col-hide-sm">${p.blood_type ? `<span class="badge badge-blue">${p.blood_type}</span>` : '—'}</td>
+            <td class="col-hide-sm">${p.gender === 'male' ? '♂ Masculin' : p.gender === 'female' ? '♀ Féminin' : '—'}</td>
+            <td onclick="event.stopPropagation()">
+              <button class="btn btn-ghost btn-sm" onclick="openEdit(${p.id})"><i class="ti ti-edit"></i></button>
+              ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deletePatient(${p.id}, '${p.name.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button>` : ''}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+let currentDetailId = null;
+
+function openDetails(id) {
+  const p = allPatients.find(x => x.id === id);
+  if (!p) return;
+  currentDetailId = id;
+
+  const rows = [
+    ['Nom complet', p.name],
+    ['Téléphone', p.phone],
+    ['Email', p.email || '—'],
+    ['Date de naissance', p.date_of_birth ? p.date_of_birth.slice(0,10) : '—'],
+    ['Âge', p.age != null ? p.age + ' ans' : '—'],
+    ['Genre', p.gender === 'male' ? 'Masculin' : p.gender === 'female' ? 'Féminin' : '—'],
+    ['Groupe sanguin', p.blood_type || '—'],
+    ['Adresse', p.address || '—'],
+    ['Allergies', p.allergies || '—'],
+    ['Maladies chroniques', p.chronic_conditions || '—'],
+  ];
+
+  document.getElementById('patientDetailBody').innerHTML = rows.map(([label, value]) => `
+    <div class="detail-row">
+      <span class="detail-label">${label}</span>
+      <span class="detail-value">${value}</span>
+    </div>
+  `).join('');
+
+  openModal('patientDetailModal');
+}
+
+function openAdd() {
+  document.getElementById('modalTitle').textContent = 'Nouveau Patient';
+  document.getElementById('patientId').value = '';
+  ['fName','fPhone','fEmail','fDob','fGender','fBlood','fAddress','fAllergies','fChronic'].forEach(id => { document.getElementById(id).value = ''; });
+  openModal('patientModal');
+}
+
+async function openEdit(id) {
+  document.getElementById('modalTitle').textContent = 'Modifier Patient';
+  openModal('patientModal');
+  try {
+    const p = await api('GET', `/patients/${id}`);
+    document.getElementById('patientId').value  = p.id;
+    document.getElementById('fName').value      = p.name || '';
+    document.getElementById('fPhone').value     = p.phone || '';
+    document.getElementById('fEmail').value     = p.email || '';
+    document.getElementById('fDob').value       = p.date_of_birth?.slice(0,10) || '';
+    document.getElementById('fGender').value    = p.gender || '';
+    document.getElementById('fBlood').value     = p.blood_type || '';
+    document.getElementById('fAddress').value   = p.address || '';
+    document.getElementById('fAllergies').value = p.allergies || '';
+    document.getElementById('fChronic').value   = p.chronic_conditions || '';
+  } catch (e) {
+    showToast(e.message, 'error');
+    closeModal('patientModal');
+  }
+}
+
+async function savePatient() {
+  const id  = document.getElementById('patientId').value;
+  const btn = document.getElementById('saveBtn');
+  const payload = {
+    name: document.getElementById('fName').value.trim(),
+    phone: document.getElementById('fPhone').value.trim(),
+    email: document.getElementById('fEmail').value.trim() || null,
+    date_of_birth: document.getElementById('fDob').value || null,
+    gender: document.getElementById('fGender').value || null,
+    blood_type: document.getElementById('fBlood').value || null,
+    address: document.getElementById('fAddress').value.trim() || null,
+    allergies: document.getElementById('fAllergies').value.trim() || null,
+    chronic_conditions: document.getElementById('fChronic').value.trim() || null,
+  };
+
+  if (!payload.name || !payload.phone) {
+    showToast('Nom et téléphone sont obligatoires', 'error'); return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px"></span>';
+  try {
+    if (id) {
+      await api('PUT', `/patients/${id}`, payload);
+      showToast('Patient modifié avec succès', 'success');
+    } else {
+      await api('POST', '/patients', payload);
+      showToast('Patient ajouté avec succès', 'success');
+    }
+    closeModal('patientModal');
+    loadPatients();
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-device-floppy"></i> Enregistrer';
+  }
+}
+
+async function deletePatient(id, name) {
+  if (!confirm(`Supprimer le patient "${name}" ? Cette action est irréversible.`)) return;
+  try {
+    await api('DELETE', `/patients/${id}`);
+    showToast('Patient supprimé', 'success');
+    loadPatients();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+loadPatients();
+</script>
+</body>
+</html>

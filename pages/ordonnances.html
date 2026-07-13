@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Ordonnances</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    .ordo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap: 16px; padding: 20px; }
+    .ordo-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+    .ordo-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .ordo-card-title { font-weight: 600; font-size: 15px; color: var(--text-main); }
+    .ordo-card-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .ordo-card-body { font-size: 13px; color: var(--text-sub); margin-bottom: 14px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 10px; }
+    .ordo-card-actions { display: flex; gap: 8px; }
+    .badge-ordo { background: #EFF6FF; color: #2563EB; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+
+    /* Print styles */
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: fixed; top: 0; left: 0; width: 100%; padding: 30px; }
+    }
+
+    /* Print modal */
+    #printArea {
+      font-family: 'Inter', sans-serif;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px;
+      background: white;
+    }
+    .print-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #2563EB; padding-bottom: 20px; margin-bottom: 24px; }
+    .print-clinic-name { font-size: 22px; font-weight: 700; color: #2563EB; }
+    .print-clinic-sub { font-size: 13px; color: #6B7280; margin-top: 4px; }
+    .print-doctor-info { text-align: right; font-size: 13px; color: #374151; }
+    .print-doctor-info strong { display: block; font-size: 15px; margin-bottom: 2px; }
+    .print-title { text-align: center; font-size: 18px; font-weight: 700; color: #111827; margin: 20px 0; letter-spacing: 1px; text-transform: uppercase; }
+    .print-patient { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; }
+    .print-patient-name { font-size: 16px; font-weight: 600; }
+    .print-patient-info { font-size: 13px; color: #6B7280; margin-top: 4px; }
+    .print-section-title { font-size: 13px; font-weight: 600; color: #2563EB; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .print-prescription { min-height: 180px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+    .print-diagnosis { background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+    .print-next-visit { font-size: 13px; color: #059669; font-weight: 500; margin-bottom: 30px; }
+    .print-footer { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #E5E7EB; padding-top: 20px; margin-top: 10px; }
+    .print-signature { text-align: center; }
+    .print-signature-line { border-top: 1px solid #111827; width: 180px; margin: 40px auto 8px; }
+    .print-signature-label { font-size: 12px; color: #6B7280; }
+    .print-date { font-size: 13px; color: #6B7280; }
+    .print-stamp { width: 100px; height: 100px; border: 2px dashed #D1D5DB; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9CA3AF; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- Hidden print area -->
+<div id="printArea" style="display:none"></div>
+
+<!-- New Ordonnance Modal -->
+<div class="modal-overlay" id="ordoModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title">Nouvelle Ordonnance</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('ordoModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Patient *</label>
+        <select id="ordoPatient" class="form-control"><option value="">— Sélectionner —</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Médecin *</label>
+        <select id="ordoDoctor" class="form-control"><option value="">— Sélectionner —</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Diagnostic</label>
+        <textarea id="ordoDiag" class="form-control" rows="2" placeholder="Ex: Hypertension artérielle..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prescription (médicaments & dosages) *</label>
+        <textarea id="ordoPres" class="form-control" rows="5" placeholder="Ex:&#10;- Paracétamol 1g — 3x/jour pendant 5 jours&#10;- Amoxicilline 500mg — 2x/jour pendant 7 jours"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prochaine visite</label>
+        <input id="ordoNext" type="date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="ordoNotes" class="form-control" rows="2" placeholder="Notes supplémentaires..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ordoModal')">Annuler</button>
+      <button id="saveOrdoBtn" class="btn btn-primary" onclick="saveOrdonnance()">
+        <i class="ti ti-file-plus"></i> Créer l'ordonnance
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+initLayout('ordonnances', 'Ordonnances');
+const user = Auth.getUser();
+const isDoctor = user?.role === 'doctor';
+const isStaff  = ['admin', 'secretary'].includes(user?.role);
+
+document.getElementById('topbarActions').innerHTML = (isDoctor || isStaff) ? `
+  <button class="btn btn-primary" onclick="openOrdoModal()">
+    <i class="ti ti-plus"></i> Nouvelle ordonnance
+  </button>` : '';
+
+// Store ordonnances locally (since it's linked to consultations)
+let ordonnances = JSON.parse(localStorage.getItem('clinic_ordonnances') || '[]');
+let patients = [], doctors = [];
+
+async function loadOrdonnances() {
+  const content = document.getElementById('pageContent');
+
+  if (!ordonnances.length) {
+    content.innerHTML = `
+      <div class="card" style="margin:20px">
+        <div class="card-header">
+          <span class="card-title">Ordonnances</span>
+          <span class="badge badge-gray">0</span>
+        </div>
+        <div class="empty-state">
+          <i class="ti ti-file-off" style="font-size:40px;color:var(--text-muted)"></i>
+          <p>Aucune ordonnance trouvée</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:600;font-size:15px">Ordonnances <span class="badge badge-gray">${ordonnances.length}</span></span>
+    </div>
+    <div class="ordo-grid">
+      ${ordonnances.map((o, i) => `
+        <div class="ordo-card">
+          <div class="ordo-card-header">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0">
+                <i class="ti ti-heart-rate-monitor"></i>
+              </div>
+              <div>
+                <div class="ordo-card-title">${o.patientName}</div>
+                <div class="ordo-card-sub">Dr. ${o.doctorName}</div>
+              </div>
+            </div>
+            <span class="badge-ordo">#${String(i+1).padStart(3,'0')}</span>
+          </div>
+          <div class="ordo-card-body">
+            ${o.diagnosis ? `<strong>Diagnostic:</strong> ${o.diagnosis}<br>` : ''}
+            <strong>Prescription:</strong><br>
+            ${o.prescription.substring(0, 100)}${o.prescription.length > 100 ? '...' : ''}
+            ${o.nextVisit ? `<br><span style="color:var(--success)"><i class="ti ti-calendar"></i> Prochaine visite: ${fmtDate(o.nextVisit)}</span>` : ''}
+          </div>
+          <div class="ordo-card-actions">
+            <button class="btn btn-ghost btn-sm" onclick="printOrdonnance(${i})" title="Imprimer">
+              <i class="ti ti-printer"></i> Imprimer
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="downloadOrdonnance(${i})" title="Télécharger PDF">
+              <i class="ti ti-download"></i> PDF
+            </button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteOrdonnance(${i})" title="Supprimer">
+              <i class="ti ti-trash"></i>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
+            <i class="ti ti-clock"></i> ${fmtDate(o.createdAt)}
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+async function openOrdoModal() {
+  openModal('ordoModal');
+  try {
+    if (!patients.length) {
+      const res = await api('GET', '/patients');
+      patients = res.data || res || [];
+      document.getElementById('ordoPatient').innerHTML = '<option value="">— Sélectionner —</option>' +
+        patients.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name}</option>`).join('');
+    }
+    if (!doctors.length) {
+      const res = await api('GET', '/doctors');
+      doctors = res.data || res || [];
+      document.getElementById('ordoDoctor').innerHTML = '<option value="">— Sélectionner —</option>' +
+        doctors.map(d => `<option value="${d.id}" data-name="${d.user?.name || d.name}">${d.user?.name || d.name} — ${d.speciality || ''}</option>`).join('');
+    }
+  } catch(e) { showToast('Erreur chargement données', 'error'); }
+}
+
+async function saveOrdonnance() {
+  const btn = document.getElementById('saveOrdoBtn');
+  const patientEl = document.getElementById('ordoPatient');
+  const doctorEl  = document.getElementById('ordoDoctor');
+
+  const patientId   = patientEl.value;
+  const patientName = patientEl.options[patientEl.selectedIndex]?.dataset.name || '';
+  const doctorId    = doctorEl.value;
+  const doctorName  = doctorEl.options[doctorEl.selectedIndex]?.dataset.name || '';
+  const prescription = document.getElementById('ordoPres').value.trim();
+
+  if (!patientId || !doctorId || !prescription) {
+    showToast('Patient, médecin et prescription sont obligatoires', 'error'); return;
+  }
+
+  const ordo = {
+    patientId, patientName,
+    doctorId, doctorName,
+    diagnosis:   document.getElementById('ordoDiag').value.trim(),
+    prescription,
+    notes:       document.getElementById('ordoNotes').value.trim(),
+    nextVisit:   document.getElementById('ordoNext').value || null,
+    createdAt:   new Date().toISOString(),
+  };
+
+  ordonnances.unshift(ordo);
+  localStorage.setItem('clinic_ordonnances', JSON.stringify(ordonnances));
+  showToast('Ordonnance créée avec succès', 'success');
+  closeModal('ordoModal');
+
+  // reset form
+  ['ordoPatient','ordoDoctor','ordoDiag','ordoPres','ordoNotes','ordoNext'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  loadOrdonnances();
+}
+
+function deleteOrdonnance(i) {
+  if (!confirm('Supprimer cette ordonnance ?')) return;
+  ordonnances.splice(i, 1);
+  localStorage.setItem('clinic_ordonnances', JSON.stringify(ordonnances));
+  showToast('Ordonnance supprimée', 'success');
+  loadOrdonnances();
+}
+
+function buildPrintHTML(o, i) {
+  const today = new Date().toLocaleDateString('fr-DZ', { day:'2-digit', month:'long', year:'numeric' });
+  return `
+    <div class="print-header">
+      <div>
+        <div class="print-clinic-name">🏥 Gestion Clinique</div>
+        <div class="print-clinic-sub">Clinique Médicale Privée</div>
+      </div>
+      <div class="print-doctor-info">
+        <strong>Dr. ${o.doctorName}</strong>
+        Médecin Généraliste<br>
+        Tél: —
+      </div>
+    </div>
+    <div class="print-title">Ordonnance Médicale</div>
+    <div class="print-patient">
+      <div class="print-patient-name">Patient: ${o.patientName}</div>
+      <div class="print-patient-info">Date: ${fmtDate(o.createdAt)} &nbsp;|&nbsp; Réf: #${String(i+1).padStart(3,'0')}</div>
+    </div>
+    ${o.diagnosis ? `
+    <div class="print-section-title">Diagnostic</div>
+    <div class="print-diagnosis">${o.diagnosis}</div>` : ''}
+    <div class="print-section-title">Prescription</div>
+    <div class="print-prescription">${o.prescription}</div>
+    ${o.nextVisit ? `<div class="print-next-visit">📅 Prochaine visite: ${fmtDate(o.nextVisit)}</div>` : ''}
+    ${o.notes ? `<div style="font-size:13px;color:#6B7280;margin-bottom:20px"><strong>Notes:</strong> ${o.notes}</div>` : ''}
+    <div class="print-footer">
+      <div class="print-date">Fait à Alger, le ${today}</div>
+      <div class="print-signature">
+        <div class="print-signature-line"></div>
+        <div class="print-signature-label">Signature & Cachet du médecin</div>
+      </div>
+      <div class="print-stamp">Cachet<br>Clinique</div>
+    </div>
+  `;
+}
+
+function printOrdonnance(i) {
+  const o = ordonnances[i];
+  const printArea = document.getElementById('printArea');
+  printArea.innerHTML = buildPrintHTML(o, i);
+  printArea.style.display = 'block';
+  window.print();
+  printArea.style.display = 'none';
+}
+
+async function downloadOrdonnance(i) {
+  const o = ordonnances[i];
+
+  // Use html2canvas approach via iframe for PDF
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Ordonnance — ${o.patientName}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Inter', sans-serif; padding: 40px; color: #111827; font-size: 14px; }
+      .print-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #2563EB; padding-bottom: 20px; margin-bottom: 24px; }
+      .print-clinic-name { font-size: 22px; font-weight: 700; color: #2563EB; }
+      .print-clinic-sub { font-size: 13px; color: #6B7280; margin-top: 4px; }
+      .print-doctor-info { text-align: right; font-size: 13px; color: #374151; }
+      .print-doctor-info strong { display: block; font-size: 15px; margin-bottom: 2px; }
+      .print-title { text-align: center; font-size: 18px; font-weight: 700; color: #111827; margin: 20px 0; letter-spacing: 1px; text-transform: uppercase; }
+      .print-patient { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; }
+      .print-patient-name { font-size: 16px; font-weight: 600; }
+      .print-patient-info { font-size: 13px; color: #6B7280; margin-top: 4px; }
+      .print-section-title { font-size: 13px; font-weight: 600; color: #2563EB; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .print-prescription { min-height: 180px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+      .print-diagnosis { background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+      .print-next-visit { font-size: 13px; color: #059669; font-weight: 500; margin-bottom: 20px; }
+      .print-footer { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #E5E7EB; padding-top: 20px; margin-top: 30px; }
+      .print-signature { text-align: center; }
+      .print-signature-line { border-top: 1px solid #111827; width: 180px; margin: 50px auto 8px; }
+      .print-signature-label { font-size: 12px; color: #6B7280; }
+      .print-date { font-size: 13px; color: #6B7280; }
+      .print-stamp { width: 100px; height: 100px; border: 2px dashed #D1D5DB; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9CA3AF; text-align: center; line-height: 1.4; }
+    </style>
+    </head><body>
+    ${buildPrintHTML(o, i)}
+    <script>window.onload = function(){ window.print(); setTimeout(()=>window.close(),1000); }<\/script>
+    </body></html>
+  `);
+  win.document.close();
+}
+
+loadOrdonnances();
+</script>
+</body>
+</html>

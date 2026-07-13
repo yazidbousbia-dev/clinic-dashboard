@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Consultations</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- New Consultation Modal -->
+<div class="modal-overlay" id="consultModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nouvelle Consultation</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('consultModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Rendez-vous *</label>
+        <select id="consultAppt" class="form-control"><option value="">— Sélectionner —</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Diagnostic</label>
+        <textarea id="consultDiag" class="form-control" rows="3" placeholder="Diagnostic..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prescription</label>
+        <textarea id="consultPres" class="form-control" rows="3" placeholder="Médicaments, dosages..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes du médecin</label>
+        <textarea id="consultNotes" class="form-control" rows="2" placeholder="Notes internes..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prochaine visite</label>
+        <input id="consultNext" type="date" class="form-control">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('consultModal')">Annuler</button>
+      <button id="saveConsultBtn" class="btn btn-primary" onclick="saveConsultation()">
+        <i class="ti ti-clipboard-check"></i> Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- View Consultation Modal -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Détails Consultation</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('viewModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="viewContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('viewModal')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('consultations', 'Consultations');
+const user = Auth.getUser();
+const isDoctor = user?.role === 'doctor';
+const isStaff  = ['admin', 'secretary'].includes(user?.role);
+
+document.getElementById('topbarActions').innerHTML = (isDoctor || isStaff) ? `
+  <button class="btn btn-primary" onclick="openConsultModal()">
+    <i class="ti ti-plus"></i> Nouvelle consultation
+  </button>` : '';
+
+let appointments = [];
+
+async function loadConsultations() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Consultations</span>
+        <span id="consultCount" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap" id="consultTable">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const res  = await api('GET', '/consultations');
+    const rows = res.data || res || [];
+    document.getElementById('consultCount').textContent = rows.length;
+
+    const table = document.getElementById('consultTable');
+    if (!rows.length) {
+      table.innerHTML = '<div class="empty-state"><i class="ti ti-clipboard-off"></i><p>Aucune consultation trouvée</p></div>';
+      return;
+    }
+    table.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>#</th><th>Patient</th><th>Médecin</th>
+          <th class="col-hide-sm">Diagnostic</th><th class="col-hide-sm">Prochaine visite</th><th class="col-hide-sm">Date</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(c => `
+            <tr onclick="viewConsultation(${c.id})">
+              <td><span style="color:var(--text-muted)">${c.id}</span></td>
+              <td>${c.appointment?.patient?.name || '—'}</td>
+              <td>${c.appointment?.doctor?.user?.name || '—'}</td>
+              <td class="col-hide-sm">${c.diagnosis ? c.diagnosis.substring(0, 40) + (c.diagnosis.length > 40 ? '...' : '') : '—'}</td>
+              <td class="col-hide-sm">${c.next_visit_date ? fmtDate(c.next_visit_date) : '—'}</td>
+              <td class="col-hide-sm">${fmtDate(c.created_at)}</td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-ghost btn-sm" onclick="viewConsultation(${c.id})">
+                  <i class="ti ti-eye"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch(e) {
+    document.getElementById('consultTable').innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+  }
+}
+
+async function openConsultModal() {
+  openModal('consultModal');
+  if (!appointments.length) {
+    try {
+      const res = await api('GET', '/appointments');
+      appointments = res.data || res || [];
+      document.getElementById('consultAppt').innerHTML = '<option value="">— Sélectionner —</option>' +
+        appointments
+          .filter(a => a.status === 'confirmed' || a.status === 'completed')
+          .map(a => `<option value="${a.id}">${a.patient?.name || 'Patient'} — ${fmtDate(a.appointment_date || a.date)}</option>`)
+          .join('');
+    } catch(e) {
+      showToast('Erreur chargement rendez-vous', 'error');
+    }
+  }
+}
+
+async function saveConsultation() {
+  const btn = document.getElementById('saveConsultBtn');
+  const payload = {
+    appointment_id:  Number(document.getElementById('consultAppt').value),
+    diagnosis:       document.getElementById('consultDiag').value || null,
+    prescription:    document.getElementById('consultPres').value || null,
+    doctor_notes:    document.getElementById('consultNotes').value || null,
+    next_visit_date: document.getElementById('consultNext').value || null,
+  };
+  if (!payload.appointment_id) {
+    showToast('Veuillez sélectionner un rendez-vous', 'error'); return;
+  }
+  btn.disabled = true;
+  try {
+    await api('POST', '/consultations', payload);
+    showToast('Consultation enregistrée', 'success');
+    closeModal('consultModal');
+    loadConsultations();
+  } catch(e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; }
+}
+
+async function viewConsultation(id) {
+  openModal('viewModal');
+  document.getElementById('viewContent').innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+  try {
+    const c = await api('GET', `/consultations/${id}`);
+    document.getElementById('viewContent').innerHTML = `
+      <div class="form-group">
+        <label class="form-label">Patient</label>
+        <p>${c.appointment?.patient?.name || '—'}</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Médecin</label>
+        <p>${c.appointment?.doctor?.user?.name || '—'}</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Diagnostic</label>
+        <p>${c.diagnosis || '—'}</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prescription</label>
+        <p>${c.prescription || '—'}</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes du médecin</label>
+        <p>${c.doctor_notes || '—'}</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prochaine visite</label>
+        <p>${c.next_visit_date ? fmtDate(c.next_visit_date) : '—'}</p>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('viewContent').innerHTML = `<p>${e.message}</p>`;
+  }
+}
+
+loadConsultations();
+</script>
+</body>
+</html>

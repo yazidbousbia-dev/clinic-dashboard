@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon espace patient</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  body { background: var(--bg); }
+  .portal-topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .portal-topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+  .portal-topbar .brand .logo-icon { width: 34px; height:34px; background: var(--primary); border-radius: 9px; display:flex; align-items:center; justify-content:center; color:#fff; }
+  .portal-wrap { max-width: 880px; margin: 28px auto; padding: 0 20px 60px; }
+  .portal-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
+  .portal-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .portal-section .sub { font-size: 12.5px; color: var(--text-sub); margin-bottom: 18px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .appt-card {
+    border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px;
+  }
+  .appt-card.is-confirmed { border-color: #A7F3D0; background: #F0FDF9; }
+  .appt-doctor { font-weight: 600; font-size: 13.5px; }
+  .appt-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .appt-actions { display:flex; align-items:center; gap: 8px; flex-shrink:0; }
+
+  .chat-modal .modal { max-width: 460px; }
+  .chat-body { padding: 14px 16px; height: 380px; overflow-y: auto; display:flex; flex-direction:column; gap:8px; background:var(--bg); }
+  .chat-bubble { max-width: 78%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height:1.4; }
+  .chat-bubble.me { align-self: flex-end; background: var(--primary); color:#fff; border-bottom-right-radius: 3px; }
+  .chat-bubble.them { align-self: flex-start; background:#fff; border:1px solid var(--border); border-bottom-left-radius: 3px; }
+  .chat-bubble .meta { font-size:10px; opacity:.7; margin-top:3px; }
+  .chat-input-row { display:flex; gap:8px; padding: 12px 16px; border-top:1px solid var(--border); }
+  .chat-input-row input { flex:1; }
+</style>
+</head>
+<body>
+
+<div class="portal-topbar">
+  <div class="brand">
+    <div class="logo-icon"><i class="ti ti-heart-rate-monitor"></i></div>
+    <span>Mon espace patient</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <span id="patientName" style="font-size:13px;color:var(--text-sub)"></span>
+    <button class="btn btn-ghost" onclick="logout()"><i class="ti ti-logout"></i> Déconnexion</button>
+  </div>
+</div>
+
+<div class="portal-wrap">
+
+  <!-- ===== BOOK AN APPOINTMENT ===== -->
+  <div class="portal-section">
+    <h2>Prendre un rendez-vous</h2>
+    <div class="sub">Choisissez un médecin, une date et une heure. Le médecin doit confirmer votre demande.</div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Médecin</label>
+        <select id="bDoctor" class="form-control"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input id="bDate" type="date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure</label>
+        <input id="bTime" type="time" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motif (optionnel)</label>
+        <input id="bReason" type="text" class="form-control" placeholder="Ex : douleur, contrôle...">
+      </div>
+    </div>
+    <button id="bookBtn" class="btn btn-primary" onclick="bookAppointment()" style="margin-top:8px">
+      <i class="ti ti-calendar-plus"></i> Réserver
+    </button>
+  </div>
+
+  <!-- ===== MY APPOINTMENTS ===== -->
+  <div class="portal-section">
+    <h2>Mes rendez-vous</h2>
+    <div class="sub">Le statut passe à <strong>Confirmé</strong> dès que le médecin valide votre demande.</div>
+    <div id="apptList"><div class="empty-state">Chargement…</div></div>
+  </div>
+
+</div>
+
+<!-- ===== CHAT MODAL ===== -->
+<div class="modal-overlay chat-modal" id="chatModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="chatTitle">Discussion</div>
+      <button class="btn btn-ghost" onclick="closeChat()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text" class="form-control" placeholder="Écrire un message…">
+      <button class="btn btn-primary" onclick="sendMessage()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script>
+  // This page is patient-only — everyone else gets bounced to their normal dashboard
+  Auth.guardPage();
+  const currentUser = Auth.getUser();
+  if (currentUser && currentUser.role !== 'patient') {
+    window.location.href = 'pages/dashboard.html';
+  }
+  document.getElementById('patientName').textContent = currentUser?.name || '';
+
+  const STATUS_LABEL = { pending: 'En attente', confirmed: 'Confirmé', completed: 'Terminé', cancelled: 'Annulé' };
+  const STATUS_BADGE  = { pending: 'badge-yellow', confirmed: 'badge-green', completed: 'badge-blue', cancelled: 'badge-red' };
+
+  let chatAppointmentId = null;
+  let chatPollTimer = null;
+
+  // ---- Load doctors for the booking select ----
+  async function loadDoctors() {
+    try {
+      const doctors = await api('GET', '/doctors');
+      const sel = document.getElementById('bDoctor');
+      sel.innerHTML = doctors.map(d =>
+        `<option value="${d.id}">Dr. ${d.user.name} — ${d.speciality}</option>`
+      ).join('');
+    } catch (e) {
+      showToast('Impossible de charger la liste des médecins', 'error');
+    }
+  }
+
+  // ---- Book a new appointment ----
+  async function bookAppointment() {
+    const doctor_id = Number(document.getElementById('bDoctor').value);
+    const date = document.getElementById('bDate').value;
+    const time = document.getElementById('bTime').value;
+    const reason = document.getElementById('bReason').value.trim();
+    const btn = document.getElementById('bookBtn');
+
+    if (!doctor_id || !date || !time) {
+      showToast('Veuillez choisir un médecin, une date et une heure.', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px"></span> Envoi...';
+
+    try {
+      await api('POST', '/appointments', { doctor_id, date, time, reason });
+      showToast('Demande de rendez-vous envoyée !', 'success');
+      document.getElementById('bReason').value = '';
+      loadAppointments();
+    } catch (e) {
+      showToast(e.message || 'Erreur lors de la réservation', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-calendar-plus"></i> Réserver';
+    }
+  }
+
+  // ---- Load my appointments ----
+  async function loadAppointments() {
+    try {
+      const res = await api('GET', '/appointments');
+      const list = res.data || res; // paginate() wraps in { data: [...] }
+      const wrap = document.getElementById('apptList');
+
+      if (!list.length) {
+        wrap.innerHTML = '<div class="empty-state"><i class="ti ti-calendar-off" style="font-size:28px"></i><div>Aucun rendez-vous pour le moment.</div></div>';
+        return;
+      }
+
+      wrap.innerHTML = list.map(a => `
+        <div class="appt-card ${a.status === 'confirmed' ? 'is-confirmed' : ''}">
+          <div>
+            <div class="appt-doctor">Dr. ${a.doctor.user.name} — ${a.doctor.speciality}</div>
+            <div class="appt-meta">${fmtDate(a.date)} à ${a.time?.slice(0,5)} ${a.reason ? '· ' + a.reason : ''}</div>
+          </div>
+          <div class="appt-actions">
+            <span class="badge ${STATUS_BADGE[a.status] || 'badge-gray'}">${STATUS_LABEL[a.status] || a.status}</span>
+            <button class="btn btn-ghost" onclick="openChat(${a.id}, 'Dr. ${a.doctor.user.name}')"><i class="ti ti-message-circle"></i> Chat</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      showToast('Impossible de charger vos rendez-vous', 'error');
+    }
+  }
+
+  // ---- Chat with the doctor for a given appointment ----
+  function openChat(appointmentId, doctorLabel) {
+    chatAppointmentId = appointmentId;
+    document.getElementById('chatTitle').textContent = 'Discussion avec ' + doctorLabel;
+    document.getElementById('chatBody').innerHTML = '<div class="empty-state">Chargement…</div>';
+    openModal('chatModal');
+    loadMessages();
+    chatPollTimer = setInterval(loadMessages, 4000);
+  }
+
+  function closeChat() {
+    closeModal('chatModal');
+    clearInterval(chatPollTimer);
+    chatAppointmentId = null;
+  }
+
+  async function loadMessages() {
+    if (!chatAppointmentId) return;
+    try {
+      const messages = await api('GET', `/appointments/${chatAppointmentId}/messages`);
+      const body = document.getElementById('chatBody');
+      const wasAtBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 20;
+
+      if (!messages.length) {
+        body.innerHTML = '<div class="empty-state" style="padding:24px 0">Aucun message. Dites bonjour !</div>';
+      } else {
+        body.innerHTML = messages.map(m => `
+          <div class="chat-bubble ${m.sender_id === currentUser.id ? 'me' : 'them'}">
+            ${escapeHtml(m.body)}
+            <div class="meta">${m.sender.name} · ${new Date(m.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</div>
+          </div>
+        `).join('');
+      }
+      if (wasAtBottom) body.scrollTop = body.scrollHeight;
+    } catch (e) {
+      // silent — polling shouldn't spam errors
+    }
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const body = input.value.trim();
+    if (!body || !chatAppointmentId) return;
+
+    input.value = '';
+    try {
+      await api('POST', `/appointments/${chatAppointmentId}/messages`, { body });
+      loadMessages();
+    } catch (e) {
+      showToast('Message non envoyé', 'error');
+    }
+  }
+
+  document.getElementById('chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // Prevent booking a date in the past
+  document.getElementById('bDate').min = new Date().toISOString().split('T')[0];
+
+  loadDoctors();
+  loadAppointments();
+  setInterval(loadAppointments, 15000); // refresh statuses periodically so "confirmed" shows up without a manual reload
+</script>
+</body>
+</html>

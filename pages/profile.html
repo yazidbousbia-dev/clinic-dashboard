@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Mon Profil</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    .profile-wrap { max-width: 700px; margin: 24px auto; padding: 0 20px; }
+    .profile-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 20px; }
+    .profile-banner { height: 100px; background: linear-gradient(135deg, #2563EB, #7C3AED); }
+    .profile-avatar-wrap { padding: 0 24px; margin-top: -40px; display: flex; align-items: flex-end; justify-content: space-between; }
+    .profile-avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--surface); background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #fff; overflow: hidden; cursor: pointer; position: relative; flex-shrink: 0; }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; color: #fff; font-size: 20px; border-radius: 50%; }
+    .profile-avatar:hover .profile-avatar-overlay { display: flex; }
+    .profile-info { padding: 12px 24px 20px; }
+    .profile-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .profile-role { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: var(--primary-light); color: var(--primary); }
+    .form-section { padding: 20px 24px; border-top: 1px solid var(--border); }
+    .form-section-title { font-size: 13px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    .badge-role { padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+    .badge-admin     { background: #FEF3C7; color: #92400E; }
+    .badge-doctor    { background: #DBEAFE; color: #1E40AF; }
+    .badge-secretary { background: #F3E8FF; color: #6B21A8; }
+    .badge-patient   { background: #DCFCE7; color: #166534; }
+  </style>
+</head>
+<body>
+<div class="layout"></div>
+<input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('profile', 'Mon Profil');
+const user = Auth.getUser();
+
+async function loadProfile() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+
+  try {
+    const me = await api('GET', '/profile');
+    // Update local storage
+    Auth.save(Auth.getToken(), me);
+
+    const initials = me.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const avatarHTML = me.avatar
+      ? `<img src="${API_BASE}${me.avatar}?v=${Date.now()}" alt="avatar">`
+      : `<span>${initials}</span>`;
+
+    const roleLabels = { admin:'Administrateur', doctor:'Médecin', secretary:'Secrétaire', patient:'Patient' };
+
+    content.innerHTML = `
+      <div class="profile-wrap">
+        <!-- Profile Card -->
+        <div class="profile-card">
+          <div class="profile-banner"></div>
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar" onclick="document.getElementById('avatarInput').click()">
+              ${avatarHTML}
+              <div class="profile-avatar-overlay"><i class="ti ti-camera"></i></div>
+            </div>
+          </div>
+          <div class="profile-info">
+            <div class="profile-name">${me.name}</div>
+            <span class="profile-role"><i class="ti ti-shield"></i> ${roleLabels[me.role] || me.role}</span>
+          </div>
+
+          <!-- Edit Info -->
+          <div class="form-section">
+            <div class="form-section-title">Informations personnelles</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Nom complet</label>
+                <input id="pName" type="text" class="form-control" value="${me.name}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Téléphone</label>
+                <input id="pPhone" type="text" class="form-control" value="${me.phone || ''}">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="text" class="form-control" value="${me.email}" disabled style="opacity:0.6">
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="form-section">
+            <div class="form-section-title">Changer le mot de passe</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Nouveau mot de passe</label>
+                <input id="pPass" type="password" class="form-control" placeholder="Laisser vide pour ne pas changer">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirmer</label>
+                <input id="pPassConf" type="password" class="form-control" placeholder="Confirmer le mot de passe">
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="saveProfile()">
+              <i class="ti ti-device-floppy"></i> Enregistrer les modifications
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+  }
+}
+
+async function saveProfile() {
+  const payload = {
+    name:  document.getElementById('pName').value.trim(),
+    phone: document.getElementById('pPhone').value.trim(),
+  };
+  const pass = document.getElementById('pPass').value;
+  const conf = document.getElementById('pPassConf').value;
+  if (pass) {
+    if (pass !== conf) { showToast('Les mots de passe ne correspondent pas', 'error'); return; }
+    payload.password = pass;
+    payload.password_confirmation = conf;
+  }
+  try {
+    const updated = await api('PUT', '/profile', payload);
+    Auth.save(Auth.getToken(), updated);
+    showToast('Profil mis à jour avec succès', 'success');
+    loadProfile();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function uploadAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { showToast('Image trop grande (max 2MB)', 'error'); return; }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const updated = await api('PUT', '/profile', { avatar: e.target.result });
+      Auth.save(Auth.getToken(), updated);
+      showToast('Photo mise à jour', 'success');
+      // full reload so the sidebar avatar (rendered once at page load) picks up the new photo too
+      location.reload();
+    } catch(err) { showToast(err.message, 'error'); }
+  };
+  reader.readAsDataURL(file);
+}
+
+loadProfile();
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Tableau de bord</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="layout"></div>
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('dashboard', 'Tableau de bord');
+
+async function loadDashboard() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+
+  try {
+    const stats = await api('GET', '/dashboard/stats');
+    const appts = await api('GET', '/appointments?status=pending');
+
+    const statusData = stats.appointments_by_status || {};
+
+    content.innerHTML = `
+      <!-- Stat cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EFF6FF;color:#2563EB"><i class="ti ti-users"></i></div>
+          <div class="stat-label">Total Patients</div>
+          <div class="stat-value">${stats.total_patients ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ECFDF5;color:#059669"><i class="ti ti-calendar-check"></i></div>
+          <div class="stat-label">RDV Aujourd'hui</div>
+          <div class="stat-value">${stats.today_appointments ?? 0}</div>
+          <div class="stat-sub">${stats.upcoming_appointments ?? 0} à venir</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FFFBEB;color:#D97706"><i class="ti ti-clock"></i></div>
+          <div class="stat-label">RDV En attente</div>
+          <div class="stat-value">${stats.pending_appointments ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEF2F2;color:#DC2626"><i class="ti ti-receipt"></i></div>
+          <div class="stat-label">Factures Non Payées</div>
+          <div class="stat-value">${stats.unpaid_invoices ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#F0FDF4;color:#059669"><i class="ti ti-currency-dollar"></i></div>
+          <div class="stat-label">Revenus ce mois</div>
+          <div class="stat-value">${Number(stats.revenue_this_month ?? 0).toLocaleString('fr-DZ')} DA</div>
+        </div>
+      </div>
+
+      <!-- Charts + pending table -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:16px;margin-bottom:20px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">RDV par statut</span></div>
+          <div class="card-body" style="display:flex;align-items:center;justify-content:center">
+            <canvas id="statusChart" style="max-height:220px"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">RDV en attente de confirmation</span>
+            <a href="appointments.html" class="btn btn-ghost btn-sm">Voir tout</a>
+          </div>
+          <div class="table-wrap">
+            <table id="pendingTable">
+              <thead><tr>
+                <th>Patient</th><th>Médecin</th><th>Date</th><th>Action</th>
+              </tr></thead>
+              <tbody id="pendingBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Doughnut chart
+    const labels  = Object.keys(statusData);
+    const values  = Object.values(statusData);
+    const colors  = { pending:'#D97706', confirmed:'#2563EB', completed:'#059669', cancelled:'#DC2626' };
+    new Chart(document.getElementById('statusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: labels.map(l => ({ pending:'En attente', confirmed:'Confirmé', completed:'Terminé', cancelled:'Annulé' }[l] || l)),
+        datasets: [{ data: values, backgroundColor: labels.map(l => colors[l] || '#9CA3AF'), borderWidth: 0 }],
+      },
+      options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16, font: { size:12 } } } }, cutout: '65%' },
+    });
+
+    // Pending appointments table
+    const tbody = document.getElementById('pendingBody');
+    const rows = appts.data || [];
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><i class="ti ti-check"></i><p>Aucun RDV en attente</p></td></tr>';
+    } else {
+      tbody.innerHTML = rows.slice(0, 6).map(a => `
+        <tr>
+          <td>${a.patient?.name || '—'}</td>
+          <td>${a.doctor?.user?.name || '—'}</td>
+          <td>${fmtDate(a.date)} ${a.time?.slice(0,5)}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="confirmAppt(${a.id}, this)">Confirmer</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+  } catch (e) {
+    content.innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+async function confirmAppt(id, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    await api('PUT', `/appointments/${id}/status`, { status: 'confirmed' });
+    showToast('RDV confirmé', 'success');
+    loadDashboard();
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Confirmer';
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

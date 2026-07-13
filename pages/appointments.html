@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Rendez-vous</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- New Appointment Modal -->
+<div class="modal-overlay" id="apptModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nouveau Rendez-vous</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('apptModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Médecin *</label>
+        <select id="fDoctor" class="form-control" onchange="loadAvailability()">
+          <option value="">— Sélectionner un médecin —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date *</label>
+          <input id="fDate" type="date" class="form-control" onchange="loadAvailability()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heure *</label>
+          <select id="fTime" class="form-control">
+            <option value="">— Choisir une heure —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Patient *</label>
+        <select id="fPatient" class="form-control">
+          <option value="">— Sélectionner un patient —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motif de consultation</label>
+        <input id="fReason" class="form-control" placeholder="Ex: douleurs abdominales, fièvre...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('apptModal')">Annuler</button>
+      <button id="saveApptBtn" class="btn btn-primary" onclick="saveAppointment()">
+        <i class="ti ti-calendar-plus"></i> Confirmer le RDV
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Status update modal -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Changer le statut</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('statusModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="statusApptId">
+      <div class="form-group">
+        <label class="form-label">Nouveau statut</label>
+        <select id="fStatus" class="form-control">
+          <option value="pending">En attente</option>
+          <option value="confirmed">Confirmé</option>
+          <option value="completed">Terminé</option>
+          <option value="cancelled">Annulé</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('statusModal')">Annuler</button>
+      <button class="btn btn-primary" onclick="updateStatus()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Detail Modal -->
+<div class="modal-overlay" id="apptDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Détails du rendez-vous</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('apptDetailModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="apptDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('apptDetailModal')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Modal -->
+<div class="modal-overlay" id="chatModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title" id="chatTitle">Discussion</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeChat()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="chatBody" style="height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;background:var(--bg);padding:14px 16px"></div>
+    <div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">
+      <input id="chatInput" type="text" class="form-control" placeholder="Écrire un message…">
+      <button class="btn btn-primary" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('appointments', 'Rendez-vous');
+const user = Auth.getUser();
+const isStaff = ['admin','secretary'].includes(user?.role);
+const isDoctor = user?.role === 'doctor';
+const canChangeStatus = isStaff || isDoctor;
+
+document.getElementById('topbarActions').innerHTML = isStaff ? `
+  <button class="btn btn-primary" onclick="openAddModal()">
+    <i class="ti ti-plus"></i> Nouveau RDV
+  </button>` : '';
+
+// Set min date to today
+document.getElementById('fDate').min = new Date().toISOString().slice(0,10);
+
+let doctors = [], patients = [], allAppointments = [];
+
+async function loadPage() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="toolbar">
+      <div class="search-box" style="max-width:200px">
+        <i class="ti ti-calendar"></i>
+        <input id="filterDate" type="date" class="form-control" style="border:none;padding:0" oninput="loadAppointments()">
+      </div>
+      <select id="filterStatus" class="form-control" style="max-width:160px" onchange="loadAppointments()">
+        <option value="">Tous les statuts</option>
+        <option value="pending">En attente</option>
+        <option value="confirmed">Confirmé</option>
+        <option value="completed">Terminé</option>
+        <option value="cancelled">Annulé</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Liste des rendez-vous</span>
+        <span id="apptCount" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap" id="apptTable">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+  `;
+  await loadAppointments();
+}
+
+async function loadAppointments() {
+  const date   = document.getElementById('filterDate')?.value || '';
+  const status = document.getElementById('filterStatus')?.value || '';
+  let url = '/appointments?';
+  if (date)   url += `date=${date}&`;
+  if (status) url += `status=${status}`;
+
+  const table = document.getElementById('apptTable');
+  table.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+
+  try {
+    const res  = await api('GET', url);
+    const rows = res.data || [];
+    allAppointments = rows;
+    document.getElementById('apptCount').textContent = res.total ?? rows.length;
+
+    if (!rows.length) {
+      table.innerHTML = '<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Aucun rendez-vous trouvé</p></div>';
+      return;
+    }
+    table.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Patient</th><th>Médecin</th><th>Date</th><th class="col-hide-sm">Heure</th>
+          <th class="col-hide-sm">Motif</th><th>Statut</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(a => `
+            <tr onclick="openApptDetails(${a.id})">
+              <td><span style="font-weight:500">${a.patient?.name || '—'}</span></td>
+              <td>${a.doctor?.user?.name || '—'}<br><span style="font-size:11px;color:var(--text-sub)">${a.doctor?.speciality || ''}</span></td>
+              <td>${fmtDate(a.date)}</td>
+              <td class="col-hide-sm"><span class="badge badge-gray">${a.time?.slice(0,5) || '—'}</span></td>
+              <td class="col-hide-sm" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.reason || '—'}</td>
+              <td>${statusBadge(a.status)}</td>
+              <td onclick="event.stopPropagation()">
+                ${canChangeStatus && a.status === 'pending' ? `<button class="btn btn-ghost btn-sm" style="color:var(--success)" onclick="quickConfirm(${a.id})" title="Confirmer"><i class="ti ti-check"></i></button>` : ''}
+                ${canChangeStatus ? `<button class="btn btn-ghost btn-sm" onclick="openStatus(${a.id}, '${a.status}')"><i class="ti ti-edit"></i></button>` : ''}
+                <button class="btn btn-ghost btn-sm" onclick="openChat(${a.id}, '${(a.patient?.name || 'Patient').replace(/'/g, "\\'")}')"><i class="ti ti-message-circle"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="cancelAppt(${a.id})"><i class="ti ti-x"></i></button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    table.innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+function openApptDetails(id) {
+  const a = allAppointments.find(x => x.id === id);
+  if (!a) return;
+  const rowsHTML = [
+    ['Patient', a.patient?.name || '—'],
+    ['Téléphone patient', a.patient?.phone || '—'],
+    ['Médecin', a.doctor?.user?.name || '—'],
+    ['Spécialité', a.doctor?.speciality || '—'],
+    ['Date', fmtDate(a.date)],
+    ['Heure', a.time?.slice(0,5) || '—'],
+    ['Motif', a.reason || '—'],
+    ['Statut', a.status],
+  ].map(([label, value]) => `
+    <div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>
+  `).join('');
+  document.getElementById('apptDetailBody').innerHTML = rowsHTML;
+  openModal('apptDetailModal');
+}
+
+async function openAddModal() {
+  openModal('apptModal');
+  // load doctors & patients for selects
+  if (!doctors.length) {
+    const [d, p] = await Promise.all([ api('GET', '/doctors'), api('GET', '/patients') ]);
+    doctors  = d || [];
+    patients = p.data || [];
+    document.getElementById('fDoctor').innerHTML  += doctors.map(d => `<option value="${d.id}">${d.user?.name} — ${d.speciality}</option>`).join('');
+    document.getElementById('fPatient').innerHTML += patients.map(p => `<option value="${p.id}">${p.name} (${p.phone})</option>`).join('');
+  }
+}
+
+async function loadAvailability() {
+  const doctorId = document.getElementById('fDoctor').value;
+  const date     = document.getElementById('fDate').value;
+  const timeSelect = document.getElementById('fTime');
+  timeSelect.innerHTML = '<option value="">Chargement...</option>';
+
+  if (!doctorId || !date) {
+    timeSelect.innerHTML = '<option value="">— Choisir une heure —</option>';
+    return;
+  }
+
+  try {
+    const avail = await api('GET', `/doctors/${doctorId}/availability?date=${date}`);
+    const booked = avail.booked_times || [];
+
+    // Generate 30-min slots 08:00–19:00
+    const slots = [];
+    for (let h = 8; h < 19; h++) {
+      for (let m of [0, 30]) {
+        const time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        slots.push(time);
+      }
+    }
+    timeSelect.innerHTML = '<option value="">— Choisir une heure —</option>' +
+      slots.map(s => {
+        const taken = booked.some(b => b?.slice(0,5) === s);
+        return `<option value="${s}" ${taken ? 'disabled' : ''}>${s}${taken ? ' (réservé)' : ''}</option>`;
+      }).join('');
+  } catch (e) {
+    timeSelect.innerHTML = '<option value="">Erreur chargement</option>';
+  }
+}
+
+async function saveAppointment() {
+  const btn = document.getElementById('saveApptBtn');
+  const payload = {
+    doctor_id:  Number(document.getElementById('fDoctor').value),
+    patient_id: Number(document.getElementById('fPatient').value),
+    date:       document.getElementById('fDate').value,
+    time:       document.getElementById('fTime').value,
+    reason:     document.getElementById('fReason').value.trim() || null,
+  };
+
+  if (!payload.doctor_id || !payload.patient_id || !payload.date || !payload.time) {
+    showToast('Veuillez remplir tous les champs obligatoires', 'error'); return;
+  }
+
+  btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px"></span>';
+  try {
+    await api('POST', '/appointments', payload);
+    showToast('Rendez-vous créé avec succès', 'success');
+    closeModal('apptModal');
+    loadAppointments();
+  } catch(e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-calendar-plus"></i> Confirmer le RDV';
+  }
+}
+
+function openStatus(id, current) {
+  document.getElementById('statusApptId').value = id;
+  document.getElementById('fStatus').value = current;
+  openModal('statusModal');
+}
+
+async function updateStatus() {
+  const id     = document.getElementById('statusApptId').value;
+  const status = document.getElementById('fStatus').value;
+  try {
+    await api('PUT', `/appointments/${id}/status`, { status });
+    showToast('Statut mis à jour', 'success');
+    closeModal('statusModal');
+    loadAppointments();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function quickConfirm(id) {
+  try {
+    await api('PUT', `/appointments/${id}/status`, { status: 'confirmed' });
+    showToast('Rendez-vous confirmé', 'success');
+    loadAppointments();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function cancelAppt(id) {
+  if (!confirm('Annuler ce rendez-vous ?')) return;
+  try {
+    await api('DELETE', `/appointments/${id}`);
+    showToast('Rendez-vous annulé', 'success');
+    loadAppointments();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ===== Chat with the patient, scoped to this appointment =====
+let chatAppointmentId = null;
+let chatPollTimer = null;
+
+function openChat(appointmentId, patientLabel) {
+  chatAppointmentId = appointmentId;
+  document.getElementById('chatTitle').textContent = 'Discussion avec ' + patientLabel;
+  document.getElementById('chatBody').innerHTML = '<div class="empty-state">Chargement…</div>';
+  openModal('chatModal');
+  loadChatMessages();
+  chatPollTimer = setInterval(loadChatMessages, 4000);
+}
+
+function closeChat() {
+  closeModal('chatModal');
+  clearInterval(chatPollTimer);
+  chatAppointmentId = null;
+}
+
+async function loadChatMessages() {
+  if (!chatAppointmentId) return;
+  try {
+    const messages = await api('GET', `/appointments/${chatAppointmentId}/messages`);
+    const body = document.getElementById('chatBody');
+    const wasAtBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 20;
+
+    if (!messages.length) {
+      body.innerHTML = '<div class="empty-state" style="padding:24px 0">Aucun message pour le moment.</div>';
+    } else {
+      body.innerHTML = messages.map(m => {
+        const isBot = m.sender.email === 'assistant@clinic.local';
+        const style = m.sender_id === user.id
+          ? 'align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:3px'
+          : isBot
+            ? 'align-self:flex-start;background:#F5F3FF;border:1px solid #E0D7FC;border-bottom-left-radius:3px'
+            : 'align-self:flex-start;background:#fff;border:1px solid var(--border);border-bottom-left-radius:3px';
+        return `
+        <div style="max-width:78%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.4;${style}">
+          ${escapeChatHtml(m.body)}
+          <div style="font-size:10px;opacity:.7;margin-top:3px">${isBot ? '🤖 Assistant Clinique' : m.sender.name} · ${new Date(m.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</div>
+        </div>
+      `;
+      }).join('');
+    }
+    if (wasAtBottom) body.scrollTop = body.scrollHeight;
+  } catch (e) { /* silent while polling */ }
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const body = input.value.trim();
+  if (!body || !chatAppointmentId) return;
+  input.value = '';
+  try {
+    await api('POST', `/appointments/${chatAppointmentId}/messages`, { body });
+    loadChatMessages();
+  } catch (e) { showToast('Message non envoyé', 'error'); }
+}
+
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChatMessage();
+});
+
+function escapeChatHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+loadPage();
+</script>
+</body>
+</html>

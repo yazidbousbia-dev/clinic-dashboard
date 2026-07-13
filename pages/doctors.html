@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Médecins</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('doctors', 'Médecins');
+
+async function loadDoctors() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+  try {
+    const doctors = await api('GET', '/doctors');
+    if (!doctors.length) {
+      content.innerHTML = '<div class="empty-state"><i class="ti ti-stethoscope"></i><p>Aucun médecin enregistré</p></div>';
+      return;
+    }
+    content.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
+        ${doctors.map(d => `
+          <div class="card" style="padding:20px">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+              <div class="user-avatar" style="width:46px;height:46px;font-size:16px;background:var(--primary-light);color:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600">
+                ${(d.user?.name || 'D').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style="font-weight:600">${d.user?.name || '—'}</div>
+                <div style="font-size:12px;color:var(--text-sub)">${d.speciality}</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-sub);margin-bottom:14px">
+              <div><i class="ti ti-mail" style="margin-right:6px"></i>${d.user?.email || '—'}</div>
+              <div><i class="ti ti-phone" style="margin-right:6px"></i>${d.user?.phone || '—'}</div>
+              <div><i class="ti ti-currency-dinar" style="margin-right:6px"></i>${Number(d.consultation_fee).toLocaleString('fr-DZ')} DA / consultation</div>
+            </div>
+            <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="openDoctorStats(${d.id})">
+              <i class="ti ti-chart-bar"></i> Voir statistiques
+            </button>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Doctor Stats Modal -->
+      <div class="modal-overlay" id="doctorStatsModal">
+        <div class="modal" style="max-width:640px">
+          <div class="modal-header">
+            <span class="modal-title" id="doctorStatsTitle">Statistiques</span>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal('doctorStatsModal')"><i class="ti ti-x"></i></button>
+          </div>
+          <div class="modal-body" id="doctorStatsBody" style="max-height:70vh;overflow-y:auto"></div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('doctorStatsModal')">Fermer</button>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+  }
+}
+
+async function openDoctorStats(doctorId) {
+  openModal('doctorStatsModal');
+  const body = document.getElementById('doctorStatsBody');
+  body.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+
+  try {
+    const s = await api('GET', `/doctors/${doctorId}/stats`);
+    document.getElementById('doctorStatsTitle').textContent = `Dr. ${s.doctor.user.name} — ${s.doctor.speciality}`;
+
+    body.innerHTML = `
+      <div class="stats-grid" style="margin-bottom:18px">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EFF6FF;color:#2563EB"><i class="ti ti-users"></i></div>
+          <div class="stat-label">Patients suivis</div>
+          <div class="stat-value">${s.total_patients}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ECFDF5;color:#059669"><i class="ti ti-calendar-check"></i></div>
+          <div class="stat-label">RDV aujourd'hui</div>
+          <div class="stat-value">${s.today_appointments}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FFFBEB;color:#D97706"><i class="ti ti-clock"></i></div>
+          <div class="stat-label">RDV en attente</div>
+          <div class="stat-value">${s.pending_appointments}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#F0FDF9;color:#0D9488"><i class="ti ti-calendar-stats"></i></div>
+          <div class="stat-label">Total RDV</div>
+          <div class="stat-value">${s.total_appointments}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#F0FDF4;color:#059669"><i class="ti ti-currency-dollar"></i></div>
+          <div class="stat-label">Revenus générés</div>
+          <div class="stat-value">${Number(s.revenue_total).toLocaleString('fr-DZ')} DA</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEF2F2;color:#DC2626"><i class="ti ti-receipt"></i></div>
+          <div class="stat-label">Factures non payées</div>
+          <div class="stat-value">${s.unpaid_invoices}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <span class="badge badge-green">Terminés : ${s.completed_appointments}</span>
+        <span class="badge badge-blue">Confirmés : ${s.confirmed_appointments}</span>
+        <span class="badge badge-yellow">En attente : ${s.pending_appointments}</span>
+        <span class="badge badge-red">Annulés : ${s.cancelled_appointments}</span>
+      </div>
+
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px">Derniers rendez-vous</div>
+      ${s.recent_appointments.length ? `
+        <table>
+          <thead><tr><th>Patient</th><th>Date</th><th>Heure</th><th>Statut</th></tr></thead>
+          <tbody>
+            ${s.recent_appointments.map(a => `
+              <tr>
+                <td>${a.patient?.name || '—'}</td>
+                <td>${fmtDate(a.date)}</td>
+                <td>${a.time?.slice(0,5) || '—'}</td>
+                <td>${statusBadge(a.status)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : '<div class="empty-state" style="padding:20px 0">Aucun rendez-vous pour le moment.</div>'}
+    `;
+  } catch (e) {
+    body.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+  }
+}
+
+loadDoctors();
+</script>
+</body>
+</html>

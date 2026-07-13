@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Connexion</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+    .login-wrap { width:100%; max-width:380px; padding:20px; }
+    .login-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:32px; box-shadow:var(--shadow-md); }
+    .login-header { text-align:center; margin-bottom:28px; }
+    .login-icon { width:48px; height:48px; background:var(--primary); border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#fff; font-size:22px; }
+    .login-title { font-size:20px; font-weight:700; margin-bottom:4px; }
+    .login-sub { font-size:13px; color:var(--text-sub); }
+    .btn-block { width:100%; justify-content:center; padding:10px; font-size:15px; }
+    .hint { font-size:11px; color:var(--text-muted); margin-top:18px; text-align:center; line-height:1.6; }
+
+    /* Error message */
+    .err-msg {
+      background: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid #FECACA;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      animation: shake 0.4s ease;
+    }
+    .err-msg.show { display: flex; }
+
+    /* Shake animation */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+
+    /* Input error highlight */
+    .form-control.input-error {
+      border-color: var(--danger);
+      background: #FFF5F5;
+    }
+    .form-control.input-error:focus {
+      box-shadow: 0 0 0 3px rgba(220,38,38,0.15);
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-sub);text-decoration:none;margin-bottom:14px">
+    <i class="ti ti-arrow-left"></i> Retour à l'accueil
+  </a>
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-icon"><i class="ti ti-heart-rate-monitor"></i></div>
+      <div class="login-title">Gestion de Clinique</div>
+      <div class="login-sub" id="loginSub">Connectez-vous à votre espace</div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:4px;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:22px">
+      <button id="tabLoginBtn" onclick="showTab('login')" class="btn" style="flex:1;justify-content:center;background:var(--surface);box-shadow:var(--shadow-sm)">Se connecter</button>
+      <button id="tabRegisterBtn" onclick="showTab('register')" class="btn" style="flex:1;justify-content:center;background:transparent">Créer un compte</button>
+    </div>
+
+    <!-- Error message -->
+    <div id="errMsg" class="err-msg">
+      <i class="ti ti-alert-circle" style="font-size:16px;flex-shrink:0"></i>
+      <span id="errText"></span>
+    </div>
+
+    <!-- ===== LOGIN FORM ===== -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Adresse e-mail</label>
+        <input id="email" type="email" class="form-control" placeholder="admin@clinic.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input id="password" type="password" class="form-control" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <button id="loginBtn" class="btn btn-primary btn-block" onclick="doLogin()">
+        <i class="ti ti-login"></i> Se connecter
+      </button>
+
+      <div class="hint">
+        Comptes de test :<br>
+        admin@clinic.com · doctor@clinic.com<br>
+        (mot de passe : <strong>password123</strong>)
+      </div>
+    </div>
+
+    <!-- ===== REGISTER FORM (patients only — required before booking a rendez-vous) ===== -->
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Nom complet</label>
+        <input id="regName" type="text" class="form-control" placeholder="Ahmed Benali" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adresse e-mail</label>
+        <input id="regEmail" type="email" class="form-control" placeholder="vous@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone</label>
+        <input id="regPhone" type="tel" class="form-control" placeholder="0555 12 34 56" autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input id="regPassword" type="password" class="form-control" placeholder="6 caractères min." autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmer le mot de passe</label>
+        <input id="regPasswordConfirm" type="password" class="form-control" placeholder="••••••••" autocomplete="new-password">
+      </div>
+
+      <button id="registerBtn" class="btn btn-primary btn-block" onclick="doRegister()">
+        <i class="ti ti-user-plus"></i> Créer mon compte
+      </button>
+
+      <div class="hint">
+        Un compte patient vous permet de réserver un rendez-vous en ligne.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script>
+  Auth.redirectIfLoggedIn();
+
+  function showTab(tab) {
+    const isLogin = tab === 'login';
+    document.getElementById('loginForm').style.display = isLogin ? '' : 'none';
+    document.getElementById('registerForm').style.display = isLogin ? 'none' : '';
+    document.getElementById('tabLoginBtn').style.background = isLogin ? 'var(--surface)' : 'transparent';
+    document.getElementById('tabLoginBtn').style.boxShadow = isLogin ? 'var(--shadow-sm)' : 'none';
+    document.getElementById('tabRegisterBtn').style.background = isLogin ? 'transparent' : 'var(--surface)';
+    document.getElementById('tabRegisterBtn').style.boxShadow = isLogin ? 'none' : 'var(--shadow-sm)';
+    document.getElementById('loginSub').textContent = isLogin ? 'Connectez-vous à votre espace' : 'Créez votre compte patient pour réserver un rendez-vous';
+    hideError();
+  }
+
+  // Coming from the landing page "Réserver" button → open straight on the register tab
+  if (new URLSearchParams(window.location.search).get('mode') === 'register') {
+    showTab('register');
+  }
+
+  // Allow Enter key to submit
+  ['email','password'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+    // Clear error on typing
+    document.getElementById(id).addEventListener('input', () => hideError());
+  });
+  ['regName','regEmail','regPhone','regPassword','regPasswordConfirm'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') doRegister();
+    });
+    document.getElementById(id).addEventListener('input', () => hideError());
+  });
+
+  function showError(msg) {
+    const err  = document.getElementById('errMsg');
+    const text = document.getElementById('errText');
+    text.textContent = msg;
+    err.classList.remove('show');
+    void err.offsetWidth; // restart animation
+    err.classList.add('show');
+
+    // Highlight inputs
+    document.getElementById('email').classList.add('input-error');
+    document.getElementById('password').classList.add('input-error');
+
+    // Focus password field
+    document.getElementById('password').focus();
+    document.getElementById('password').select();
+  }
+
+  function hideError() {
+    document.getElementById('errMsg').classList.remove('show');
+    document.getElementById('email').classList.remove('input-error');
+    document.getElementById('password').classList.remove('input-error');
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn      = document.getElementById('loginBtn');
+
+    hideError();
+
+    // Validate fields
+    if (!email && !password) {
+      showError('Veuillez entrer votre email et mot de passe.');
+      return;
+    }
+    if (!email) {
+      showError('Veuillez entrer votre adresse e-mail.');
+      document.getElementById('email').focus();
+      return;
+    }
+    if (!password) {
+      showError('Veuillez entrer votre mot de passe.');
+      document.getElementById('password').focus();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px"></span> Connexion...';
+
+    try {
+      const data = await api('POST', '/login', { email, password });
+      Auth.save(data.token, data.user);
+      window.location.href = (data.user.role === 'patient') ? 'patient-portal.html' : 'pages/dashboard.html';
+    } catch (e) {
+      // Show friendly error message
+      let msg = 'Email ou mot de passe incorrect. Veuillez réessayer.';
+      if (e.message && e.message.toLowerCase().includes('network')) {
+        msg = 'Impossible de se connecter au serveur. Vérifiez votre connexion.';
+      }
+      showError(msg);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-login"></i> Se connecter';
+    }
+  }
+
+  async function doRegister() {
+    const name             = document.getElementById('regName').value.trim();
+    const email            = document.getElementById('regEmail').value.trim();
+    const phone            = document.getElementById('regPhone').value.trim();
+    const password         = document.getElementById('regPassword').value;
+    const passwordConfirm  = document.getElementById('regPasswordConfirm').value;
+    const btn              = document.getElementById('registerBtn');
+
+    hideError();
+
+    if (!name || !email || !password) {
+      showError('Veuillez remplir votre nom, email et mot de passe.');
+      return;
+    }
+    if (password.length < 6) {
+      showError('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      showError('Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px"></span> Création du compte...';
+
+    try {
+      const data = await api('POST', '/register', {
+        name,
+        email,
+        phone,
+        password,
+        password_confirmation: passwordConfirm,
+      });
+      Auth.save(data.token, data.user);
+      // straight to the patient portal — this was the whole point of creating the account
+      window.location.href = 'patient-portal.html';
+    } catch (e) {
+      let msg = 'Impossible de créer le compte. Vérifiez vos informations.';
+      if (e.message && e.message.toLowerCase().includes('email')) msg = 'Cet email est déjà utilisé.';
+      else if (e.message && e.message.toLowerCase().includes('network')) msg = 'Impossible de se connecter au serveur. Vérifiez votre connexion.';
+      showError(msg);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-user-plus"></i> Créer mon compte';
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Créer un compte</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .spec-option {
+      display: flex; align-items: center; gap: 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px; padding: 9px 12px;
+      cursor: pointer; transition: all .15s;
+      font-size: 13px; font-weight: 500; color: var(--text-sub);
+      background: var(--surface);
+      user-select: none;
+    }
+    .spec-option:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .spec-option.selected { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+    .spec-option i { font-size: 16px; }
+    .spec-search {
+      display: flex; align-items: center; gap: 8px;
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 12px; margin-bottom: 10px;
+      background: var(--bg);
+    }
+    .spec-search input { border: none; outline: none; background: transparent; flex: 1; font-size: 13px; color: var(--text-main); }
+    .spec-search i { color: var(--text-muted); font-size: 14px; }
+    .custom-input-row { display: flex; gap: 8px; margin-top: 8px; }
+    .custom-input-row input { flex: 1; }
+  </style>
+</head>
+<body>
+<div class="layout"></div>
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('staff', 'Créer un compte staff');
+
+// ── Liste complète des spécialités ──
+const SPECIALITES = [
+  { label: 'Médecine Générale',       icon: 'ti-stethoscope'      },
+  { label: 'Cardiologie',             icon: 'ti-heart'             },
+  { label: 'Pédiatrie',               icon: 'ti-baby-carriage'     },
+  { label: 'Gynécologie-Obstétrique', icon: 'ti-gender-female'     },
+  { label: 'Dermatologie',            icon: 'ti-sun'               },
+  { label: 'Neurologie',              icon: 'ti-brain'             },
+  { label: 'Ophtalmologie',           icon: 'ti-eye'               },
+  { label: 'ORL',                     icon: 'ti-ear'               },
+  { label: 'Orthopédie',              icon: 'ti-bone'              },
+  { label: 'Pneumologie',             icon: 'ti-lungs'             },
+  { label: 'Gastroentérologie',       icon: 'ti-stomach'           },
+  { label: 'Endocrinologie',          icon: 'ti-test-pipe'         },
+  { label: 'Rhumatologie',            icon: 'ti-wheelchair'        },
+  { label: 'Urologie',                icon: 'ti-droplet'           },
+  { label: 'Néphrologie',             icon: 'ti-filter'            },
+  { label: 'Oncologie',               icon: 'ti-radioactive'       },
+  { label: 'Psychiatrie',             icon: 'ti-mood-happy'        },
+  { label: 'Anesthésiologie',         icon: 'ti-syringe'           },
+  { label: 'Radiologie',              icon: 'ti-scan'              },
+  { label: 'Chirurgie Générale',      icon: 'ti-scissors'          },
+  { label: 'Chirurgie Cardiaque',     icon: 'ti-heart-plus'        },
+  { label: 'Chirurgie Pédiatrique',   icon: 'ti-baby'              },
+  { label: 'Médecine d\'Urgence',     icon: 'ti-ambulance'         },
+  { label: 'Infectiologie',           icon: 'ti-virus'             },
+  { label: 'Hématologie',             icon: 'ti-droplet-half-2'    },
+  { label: 'Dentisterie',             icon: 'ti-tooth'             },
+  { label: 'Kinésithérapie',          icon: 'ti-walk'              },
+  { label: 'Nutrition & Diététique',  icon: 'ti-salad'             },
+  { label: 'Médecine du Travail',     icon: 'ti-briefcase'         },
+  { label: 'Anatomie Pathologique',   icon: 'ti-microscope'        },
+];
+
+const user = Auth.getUser();
+
+if (user?.role !== 'admin') {
+  document.getElementById('pageContent').innerHTML =
+    '<div class="empty-state"><i class="ti ti-lock"></i><p>Accès réservé à l\'administrateur</p></div>';
+} else {
+  renderPage();
+}
+
+function renderPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="card" style="max-width:680px">
+      <div class="card-header">
+        <span class="card-title"><i class="ti ti-user-plus" style="margin-right:6px;color:var(--primary)"></i>Nouveau compte médecin / secrétaire</span>
+      </div>
+      <div class="card-body">
+
+        <!-- Infos de base -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nom complet *</label>
+            <input id="sName" class="form-control" placeholder="Dr. Ahmed Benali">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rôle *</label>
+            <select id="sRole" class="form-control" onchange="toggleDoctorFields()">
+              <option value="doctor">Médecin</option>
+              <option value="secretary">Secrétaire</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input id="sEmail" type="email" class="form-control" placeholder="medecin@clinique.dz">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Téléphone</label>
+            <input id="sPhone" class="form-control" placeholder="0555 000 000">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mot de passe *</label>
+          <input id="sPassword" type="password" class="form-control" placeholder="Minimum 6 caractères">
+        </div>
+
+        <!-- Champs médecin uniquement -->
+        <div id="doctorFields">
+          <div style="height:1px;background:var(--border);margin:16px 0"></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-sub);margin-bottom:14px;display:flex;align-items:center;gap:6px">
+            <i class="ti ti-stethoscope" style="color:var(--primary)"></i>
+            Informations médicales
+          </div>
+
+          <!-- Honoraires -->
+          <div class="form-group">
+            <label class="form-label">Honoraires de consultation (DA) *</label>
+            <input id="sFee" type="number" class="form-control" placeholder="2000" min="0">
+          </div>
+
+          <!-- Spécialité avec grille de sélection -->
+          <div class="form-group">
+            <label class="form-label">Spécialité *</label>
+
+            <!-- Barre de recherche dans les spécialités -->
+            <div class="spec-search">
+              <i class="ti ti-search"></i>
+              <input type="text" id="specSearch" placeholder="Rechercher une spécialité..."
+                     oninput="filterSpec(this.value)">
+            </div>
+
+            <!-- Grille des spécialités -->
+            <div class="spec-grid" id="specGrid"></div>
+
+            <!-- Spécialité sélectionnée (affichage) -->
+            <div id="specSelected" style="display:none;margin-top:10px;padding:9px 13px;background:var(--primary-light);border:1.5px solid var(--primary);border-radius:9px;font-size:13px;color:var(--primary);font-weight:600;display:flex;align-items:center;gap:8px">
+              <i class="ti ti-check"></i>
+              <span id="specSelectedLabel"></span>
+              <button onclick="clearSpec()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--primary);font-size:13px">✕</button>
+            </div>
+
+            <!-- Spécialité personnalisée -->
+            <div style="margin-top:10px">
+              <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:5px;cursor:pointer">
+                <input type="checkbox" id="customSpecCheck" onchange="toggleCustomSpec()">
+                Autre spécialité (saisie manuelle)
+              </label>
+              <div id="customSpecRow" style="display:none;margin-top:8px">
+                <input id="sSpecialityCustom" class="form-control" placeholder="Ex: Médecine tropicale">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bouton créer -->
+        <div style="margin-top:20px">
+          <button id="createBtn" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:15px" onclick="createStaff()">
+            <i class="ti ti-user-plus"></i> Créer le compte
+          </button>
+        </div>
+
+        <!-- Message de succès -->
+        <div id="successMsg" style="display:none;margin-top:14px;background:var(--success-light);color:var(--success);border:1px solid var(--success);padding:12px 16px;border-radius:9px;font-size:13px;display:flex;align-items:center;gap:8px">
+          <i class="ti ti-circle-check" style="font-size:18px"></i>
+          <span id="successText"></span>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  renderSpecGrid(SPECIALITES);
+}
+
+// ── Rendu de la grille des spécialités ──
+function renderSpecGrid(list) {
+  const grid = document.getElementById('specGrid');
+  if (!grid) return;
+  const currentVal = window._selectedSpec || '';
+
+  grid.innerHTML = list.length === 0
+    ? '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Aucune spécialité trouvée</div>'
+    : list.map(s => `
+        <div class="spec-option ${currentVal === s.label ? 'selected' : ''}"
+             onclick="selectSpec('${s.label.replace(/'/g, "\\'")}')">
+          <i class="ti ${s.icon}"></i>
+          ${s.label}
+        </div>
+      `).join('');
+}
+
+// ── Filtrage de la liste ──
+function filterSpec(q) {
+  const filtered = q.trim() === ''
+    ? SPECIALITES
+    : SPECIALITES.filter(s => s.label.toLowerCase().includes(q.toLowerCase()));
+  renderSpecGrid(filtered);
+}
+
+// ── Sélection d'une spécialité ──
+function selectSpec(label) {
+  window._selectedSpec = label;
+  renderSpecGrid(SPECIALITES);
+
+  // Affiche le badge de sélection
+  const box = document.getElementById('specSelected');
+  document.getElementById('specSelectedLabel').textContent = label;
+  box.style.display = 'flex';
+
+  // Décocher la case "autre"
+  document.getElementById('customSpecCheck').checked = false;
+  document.getElementById('customSpecRow').style.display = 'none';
+
+  // Reset recherche
+  document.getElementById('specSearch').value = '';
+}
+
+// ── Effacer la sélection ──
+function clearSpec() {
+  window._selectedSpec = '';
+  document.getElementById('specSelected').style.display = 'none';
+  renderSpecGrid(SPECIALITES);
+}
+
+// ── Spécialité personnalisée ──
+function toggleCustomSpec() {
+  const checked = document.getElementById('customSpecCheck').checked;
+  document.getElementById('customSpecRow').style.display = checked ? 'block' : 'none';
+  if (checked) {
+    clearSpec();
+    document.getElementById('sSpecialityCustom').focus();
+  }
+}
+
+// ── Afficher/cacher champs médecin ──
+function toggleDoctorFields() {
+  const role = document.getElementById('sRole').value;
+  document.getElementById('doctorFields').style.display = role === 'doctor' ? 'block' : 'none';
+}
+
+// ── Créer le compte ──
+async function createStaff() {
+  const btn  = document.getElementById('createBtn');
+  const role = document.getElementById('sRole').value;
+
+  // Récupérer la spécialité (grille ou custom)
+  let speciality = '';
+  if (role === 'doctor') {
+    const useCustom = document.getElementById('customSpecCheck').checked;
+    if (useCustom) {
+      speciality = document.getElementById('sSpecialityCustom').value.trim();
+    } else {
+      speciality = window._selectedSpec || '';
+    }
+  }
+
+  const payload = {
+    name:             document.getElementById('sName').value.trim(),
+    email:            document.getElementById('sEmail').value.trim(),
+    password:         document.getElementById('sPassword').value,
+    phone:            document.getElementById('sPhone').value.trim() || undefined,
+    role,
+    speciality:       role === 'doctor' ? speciality : undefined,
+    consultation_fee: role === 'doctor' ? Number(document.getElementById('sFee').value) : undefined,
+  };
+
+  // Validations
+  if (!payload.name)     { showToast('Veuillez saisir le nom', 'error'); return; }
+  if (!payload.email)    { showToast('Veuillez saisir l\'email', 'error'); return; }
+  if (!payload.password || payload.password.length < 6) {
+    showToast('Mot de passe minimum 6 caractères', 'error'); return;
+  }
+  if (role === 'doctor' && !speciality) {
+    showToast('Veuillez choisir une spécialité', 'error'); return;
+  }
+  if (role === 'doctor' && (!payload.consultation_fee || payload.consultation_fee <= 0)) {
+    showToast('Veuillez saisir les honoraires', 'error'); return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:15px;height:15px;border-width:2px"></span> Création en cours...';
+
+  try {
+    await api('POST', '/staff', payload);
+
+    // Succès
+    const msg  = document.getElementById('successMsg');
+    const text = document.getElementById('successText');
+    msg.style.display  = 'flex';
+    text.textContent   = `Compte ${role} créé pour ${payload.name} (${payload.email}) avec succès !`;
+
+    showToast('Compte créé avec succès', 'success');
+
+    // Reset formulaire
+    ['sName','sEmail','sPassword','sPhone','sFee','sSpecialityCustom'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    clearSpec();
+    document.getElementById('customSpecCheck').checked = false;
+    document.getElementById('customSpecRow').style.display = 'none';
+
+    // Cacher succès après 5s
+    setTimeout(() => { msg.style.display = 'none'; }, 5000);
+
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-user-plus"></i> Créer le compte';
+  }
+}
+</script>
+</body>
+</html>

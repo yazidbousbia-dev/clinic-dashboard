@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic — Factures</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- New Invoice Modal -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nouvelle Facture</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('invoiceModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Patient *</label>
+        <select id="invPatient" class="form-control"><option value="">— Sélectionner —</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Montant (DA) *</label>
+        <input id="invAmount" type="number" class="form-control" placeholder="2000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mode de paiement</label>
+        <select id="invMethod" class="form-control">
+          <option value="">— Non défini —</option>
+          <option value="cash">Espèces</option>
+          <option value="card">Carte</option>
+          <option value="insurance">Assurance</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('invoiceModal')">Annuler</button>
+      <button id="saveInvBtn" class="btn btn-primary" onclick="saveInvoice()">
+        <i class="ti ti-receipt"></i> Créer la facture
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Enregistrer le paiement</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('payModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="payInvId">
+      <div class="form-group">
+        <label class="form-label">Mode de paiement *</label>
+        <select id="payMethod" class="form-control">
+          <option value="cash">Espèces</option>
+          <option value="card">Carte</option>
+          <option value="insurance">Assurance</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('payModal')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmPay()"><i class="ti ti-check"></i> Confirmer paiement</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Detail Modal -->
+<div class="modal-overlay" id="invDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Détails de la facture</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('invDetailModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="invDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('invDetailModal')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('invoices', 'Factures');
+const user = Auth.getUser();
+const isStaff = ['admin','secretary'].includes(user?.role);
+
+document.getElementById('topbarActions').innerHTML = isStaff ? `
+  <button class="btn btn-primary" onclick="openInvoiceModal()">
+    <i class="ti ti-plus"></i> Nouvelle facture
+  </button>` : '';
+
+let patients = [], allInvoices = [];
+
+async function loadInvoices(filter = '') {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="toolbar">
+      <select id="filterStatus" class="form-control" style="max-width:180px" onchange="loadInvoices(this.value)">
+        <option value="">Toutes les factures</option>
+        <option value="unpaid">Non payées</option>
+        <option value="paid">Payées</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Factures</span>
+        <span id="invCount" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap" id="invTable">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('filterStatus').value = filter;
+
+  try {
+    const endpoint = filter ? `/invoices?status=${filter}` : `/invoices`;
+    const res  = await api('GET', endpoint.trim());
+    const rows = res.data || res || [];
+    allInvoices = rows;
+    document.getElementById('invCount').textContent = res.total ?? rows.length;
+
+    const table = document.getElementById('invTable');
+    if (!rows.length) {
+      table.innerHTML = '<div class="empty-state"><i class="ti ti-receipt-off"></i><p>Aucune facture trouvée</p></div>';
+      return;
+    }
+    table.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>#</th><th>Patient</th><th>Montant</th>
+          <th>Statut</th><th class="col-hide-sm">Mode</th><th class="col-hide-sm">Date paiement</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(inv => `
+            <tr onclick="openInvDetails(${inv.id})">
+              <td><span style="color:var(--text-muted)">${inv.id}</span></td>
+              <td>${inv.patient?.name || '—'}</td>
+              <td><strong>${Number(inv.amount).toLocaleString('fr-DZ')} DA</strong></td>
+              <td>${statusBadge(inv.status)}</td>
+              <td class="col-hide-sm">${inv.payment_method || '—'}</td>
+              <td class="col-hide-sm">${inv.paid_at ? fmtDate(inv.paid_at) : '—'}</td>
+              <td onclick="event.stopPropagation()">
+                ${inv.status === 'unpaid' && isStaff
+                  ? `<button class="btn btn-primary btn-sm" onclick="openPay(${inv.id})"><i class="ti ti-cash"></i> Payer</button>`
+                  : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch(e) {
+    document.getElementById('invTable').innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+  }
+}
+
+function openInvDetails(id) {
+  const inv = allInvoices.find(x => x.id === id);
+  if (!inv) return;
+  const rowsHTML = [
+    ['Patient', inv.patient?.name || '—'],
+    ['Montant', Number(inv.amount).toLocaleString('fr-DZ') + ' DA'],
+    ['Statut', inv.status === 'paid' ? 'Payée' : 'Non payée'],
+    ['Mode de paiement', inv.payment_method || '—'],
+    ['Date de paiement', inv.paid_at ? fmtDate(inv.paid_at) : '—'],
+  ].map(([label, value]) => `
+    <div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>
+  `).join('');
+  document.getElementById('invDetailBody').innerHTML = rowsHTML;
+  openModal('invDetailModal');
+}
+
+async function openInvoiceModal() {
+  openModal('invoiceModal');
+  if (!patients.length) {
+    const res = await api('GET', '/patients');
+    patients = res.data || res || [];
+    document.getElementById('invPatient').innerHTML = '<option value="">— Sélectionner —</option>' +
+      patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  }
+}
+
+async function saveInvoice() {
+  const btn = document.getElementById('saveInvBtn');
+  const payload = {
+    patient_id: Number(document.getElementById('invPatient').value),
+    amount: Number(document.getElementById('invAmount').value),
+    payment_method: document.getElementById('invMethod').value || null,
+  };
+  if (!payload.patient_id || !payload.amount) {
+    showToast('Patient et montant sont obligatoires', 'error'); return;
+  }
+  btn.disabled = true;
+  try {
+    await api('POST', '/invoices', payload);
+    showToast('Facture créée', 'success');
+    closeModal('invoiceModal');
+    loadInvoices();
+  } catch(e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; }
+}
+
+function openPay(id) {
+  document.getElementById('payInvId').value = id;
+  openModal('payModal');
+}
+
+async function confirmPay() {
+  const id     = document.getElementById('payInvId').value;
+  const method = document.getElementById('payMethod').value;
+  try {
+    await api('PUT', `/invoices/${id}/pay`, { payment_method: method });
+    showToast('Paiement enregistré', 'success');
+    closeModal('payModal');
+    loadInvoices();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+loadInvoices();
+</script>
+</body>
+</html>

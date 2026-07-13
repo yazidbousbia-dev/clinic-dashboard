@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinique Al-Shifa — Votre Santé, Notre Priorité</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    :root {
+      --primary:#2563EB; --primary-dark:#1D4ED8; --primary-light:#EFF6FF;
+      --success:#059669; --success-light:#ECFDF5;
+      --warning:#D97706; --warning-light:#FFFBEB;
+      --danger:#DC2626; --danger-light:#FEF2F2;
+      --text-main:#111827; --text-sub:#6B7280; --text-muted:#9CA3AF;
+      --border:#E5E7EB; --bg:#F9FAFB; --surface:#FFFFFF;
+      --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.08); --shadow-md:0 4px 16px rgba(0,0,0,.08);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',sans-serif;color:var(--text-main);background:var(--surface);overflow-x:hidden}
+    a{text-decoration:none;color:inherit}
+
+    /* NAVBAR */
+    .navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 5%;display:flex;align-items:center;justify-content:space-between;height:64px}
+    .nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+    .nav-logo-icon{width:36px;height:36px;background:var(--primary);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+    .nav-logo-text{font-size:15px;font-weight:700}
+    .nav-logo-sub{font-size:11px;color:var(--text-sub)}
+    .nav-links{display:flex;align-items:center;gap:26px}
+    .nav-links a{font-size:14px;font-weight:500;color:var(--text-sub);transition:color .15s}
+    .nav-links a:hover{color:var(--primary)}
+    .nav-actions{display:flex;align-items:center;gap:10px}
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+    .btn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary)}
+    .btn-outline:hover{background:var(--primary-light)}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.3)}
+    .btn-lg{padding:13px 26px;font-size:15px;border-radius:11px}
+    .btn-white{background:#fff;color:var(--primary)}
+    .btn-white:hover{background:var(--primary-light);transform:translateY(-1px)}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-main)}
+
+    /* HERO */
+    .hero{background:linear-gradient(135deg,#1E40AF 0%,#2563EB 55%,#3B82F6 100%);padding:80px 5% 100px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:-60px;right:-60px;width:400px;height:400px;background:rgba(255,255,255,.05);border-radius:50%}
+    .hero::after{content:'';position:absolute;bottom:-80px;left:30%;width:300px;height:300px;background:rgba(255,255,255,.04);border-radius:50%}
+    .hero-content{position:relative;z-index:1}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;color:#fff;margin-bottom:20px}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:#34D399;box-shadow:0 0 0 3px rgba(52,211,153,.3);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(52,211,153,.3)}50%{box-shadow:0 0 0 6px rgba(52,211,153,.1)}}
+    .hero h1{font-size:44px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:18px}
+    .hero h1 span{color:#93C5FD}
+    .hero p{font-size:16px;color:rgba(255,255,255,.82);line-height:1.7;margin-bottom:32px;max-width:480px}
+    .hero-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .hero-stats{display:flex;gap:32px;margin-top:40px}
+    .hero-stat-val{font-size:26px;font-weight:800;color:#fff}
+    .hero-stat-label{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+
+    /* HERO CARD */
+    .hero-visual{position:relative;z-index:1;display:flex;justify-content:center}
+    .hero-card{background:rgba(255,255,255,.12);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:26px;width:100%;max-width:330px}
+    .hero-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .hero-card-title{font-size:12px;font-weight:600;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.05em}
+    .hero-card-date{font-size:11px;color:rgba(255,255,255,.5)}
+    .appt-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.1);border-radius:10px;padding:11px 13px;margin-bottom:9px}
+    .appt-item:last-child{margin-bottom:0}
+    .appt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .appt-info{flex:1;min-width:0}
+    .appt-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .appt-spec{font-size:11px;color:rgba(255,255,255,.6)}
+    .appt-time{font-size:12px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap}
+    .hero-card-footer{margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.15);display:flex;justify-content:space-between;align-items:center}
+    .hero-card-footer span{font-size:11px;color:rgba(255,255,255,.6)}
+
+    /* SKELETON */
+    .skel{background:rgba(255,255,255,.2);border-radius:4px;animation:shimmer 1.5s infinite}
+    @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.8}}
+
+    /* SECTIONS */
+    section{padding:76px 5%}
+    .section-label{font-size:12px;font-weight:600;color:var(--primary);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px}
+    .section-title{font-size:32px;font-weight:800;color:var(--text-main);margin-bottom:12px;line-height:1.2}
+    .section-sub{font-size:15px;color:var(--text-sub);max-width:520px;line-height:1.7}
+    .section-center{text-align:center}
+    .section-center .section-sub{margin:0 auto}
+
+    /* SPECIALTIES */
+    .specialties{background:var(--bg)}
+    .spec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:44px}
+    .spec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 18px;text-align:center;transition:all .2s;box-shadow:var(--shadow)}
+    .spec-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--primary)}
+    .spec-icon{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px}
+    .spec-name{font-size:14px;font-weight:600;color:var(--text-main);margin-bottom:4px}
+    .spec-desc{font-size:12px;color:var(--text-sub);line-height:1.5}
+
+    /* HOW IT WORKS */
+    .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-top:50px;position:relative}
+    .steps-grid::before{content:'';position:absolute;top:27px;left:16%;right:16%;height:2px;background:linear-gradient(90deg,var(--primary-light),var(--primary),var(--primary-light))}
+    .step-card{text-align:center}
+    .step-num{width:54px;height:54px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin:0 auto 16px;position:relative;z-index:1;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+    .step-title{font-size:15px;font-weight:700;color:var(--text-main);margin-bottom:8px}
+    .step-desc{font-size:13px;color:var(--text-sub);line-height:1.6}
+
+    /* STATS BANNER */
+    .stats-banner{background:linear-gradient(135deg,#1E40AF,#2563EB);padding:56px 5%}
+    .stats-inner{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:860px;margin:0 auto}
+    .stat-item{text-align:center}
+    .stat-val{font-size:38px;font-weight:800;color:#fff;line-height:1;margin-bottom:6px}
+    .stat-label{font-size:13px;color:rgba(255,255,255,.72);font-weight:500}
+
+    /* DOCTORS */
+    .doctors{background:var(--bg)}
+    .doctors-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:44px}
+    .doctor-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 18px;text-align:center;box-shadow:var(--shadow);transition:all .2s}
+    .doctor-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+    .doctor-avatar{width:68px;height:68px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--primary);margin:0 auto 12px}
+    .doctor-name{font-size:15px;font-weight:700;color:var(--text-main);margin-bottom:3px}
+    .doctor-spec{font-size:13px;color:var(--primary);font-weight:500;margin-bottom:10px}
+    .doctor-fee{font-size:13px;color:var(--text-sub);margin-bottom:14px}
+    .doctor-fee strong{color:var(--text-main)}
+    .tag{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;display:inline-block;margin:2px}
+    .tag-blue{background:var(--primary-light);color:var(--primary)}
+    .tag-green{background:var(--success-light);color:var(--success)}
+
+    /* WHY US */
+    .why-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+    .why-list{display:flex;flex-direction:column;gap:18px;margin-top:28px}
+    .why-item{display:flex;gap:14px}
+    .why-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .why-text h4{font-size:15px;font-weight:600;color:var(--text-main);margin-bottom:3px}
+    .why-text p{font-size:13px;color:var(--text-sub);line-height:1.6}
+    .why-visual{background:var(--bg);border:1px solid var(--border);border-radius:18px;padding:26px;box-shadow:var(--shadow-md)}
+    .why-visual-title{font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:16px;text-transform:uppercase;letter-spacing:.05em}
+    .hours-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .hours-row:last-child{border-bottom:none}
+    .hours-day{font-weight:500;color:var(--text-main)}
+    .hours-time{color:var(--text-sub)}
+    .hours-badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+
+    /* TESTIMONIALS */
+    .testimonials{background:var(--bg)}
+    .reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;margin-top:44px}
+    .review-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+    .stars{color:#FBBF24;font-size:15px;margin-bottom:10px;letter-spacing:2px}
+    .review-text{font-size:13px;color:var(--text-sub);line-height:1.7;margin-bottom:14px;font-style:italic}
+    .reviewer{display:flex;align-items:center;gap:10px}
+    .reviewer-avatar{width:34px;height:34px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+    .reviewer-name{font-size:13px;font-weight:600;color:var(--text-main)}
+    .reviewer-date{font-size:11px;color:var(--text-muted)}
+
+    /* CTA */
+    .cta-section{background:linear-gradient(135deg,#1E40AF,#2563EB 60%,#1D4ED8);padding:76px 5%;text-align:center}
+    .cta-section h2{font-size:34px;font-weight:800;color:#fff;margin-bottom:12px}
+    .cta-section p{font-size:15px;color:rgba(255,255,255,.8);margin-bottom:30px}
+    .cta-actions{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+
+    /* CONTACT */
+    .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+    .contact-info{display:flex;flex-direction:column;gap:18px;margin-top:28px}
+    .contact-item{display:flex;gap:13px;align-items:flex-start}
+    .contact-icon{width:40px;height:40px;border-radius:11px;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+    .contact-item h4{font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:2px}
+    .contact-item p{font-size:14px;color:var(--text-main);font-weight:500;line-height:1.5}
+    .contact-form{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:26px}
+    .contact-form h3{font-size:16px;font-weight:700;margin-bottom:18px}
+    .form-group{margin-bottom:13px}
+    .form-label{display:block;font-size:12px;font-weight:500;color:var(--text-sub);margin-bottom:5px}
+    .form-control{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text-main);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s}
+    .form-control:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    /* FOOTER */
+    footer{background:#111827;padding:50px 5% 26px}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:36px}
+    .footer-desc{font-size:13px;line-height:1.7;margin-top:12px;color:rgba(255,255,255,.45)}
+    .footer-col h4{font-size:12px;font-weight:700;color:#fff;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em}
+    .footer-col a{display:block;font-size:13px;color:rgba(255,255,255,.5);margin-bottom:8px;transition:color .15s}
+    .footer-col a:hover{color:#93C5FD}
+    .footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,.3)}
+
+    /* MOBILE */
+    @media(max-width:900px){
+      .nav-links{display:none}.hamburger{display:block}
+      .hero{grid-template-columns:1fr;padding:56px 5% 68px;gap:36px}
+      .hero h1{font-size:32px}.hero-visual{display:none}
+      .steps-grid{grid-template-columns:1fr;gap:22px}.steps-grid::before{display:none}
+      .stats-inner{grid-template-columns:1fr 1fr}
+      .why-grid,.contact-grid{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr 1fr}
+      .section-title{font-size:26px}
+    }
+    @media(max-width:600px){
+      section{padding:52px 5%}.stats-inner{gap:22px}.stat-val{font-size:30px}
+      .footer-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-logo" href="landing.html">
+    <div class="nav-logo-icon"><i class="ti ti-heart-rate-monitor"></i></div>
+    <div>
+      <div class="nav-logo-text">Clinique Al-Shifa</div>
+      <div class="nav-logo-sub">Centre Médical · Jijel</div>
+    </div>
+  </a>
+  <div class="nav-links" id="navLinks">
+    <a href="#specialties">Spécialités</a>
+    <a href="#doctors">Médecins</a>
+    <a href="#how">Comment ça marche</a>
+    <a href="#avis">Avis</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <div class="nav-actions">
+    <a href="../index.html" class="btn btn-outline" id="navLoginBtn">
+      <i class="ti ti-login"></i> Connexion
+    </a>
+    <a href="#rdv" class="btn btn-primary">
+      <i class="ti ti-calendar-plus"></i> Prendre RDV
+    </a>
+    <button class="hamburger" onclick="toggleMenu()"><i class="ti ti-menu-2"></i></button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <div class="live-dot"></div>
+      Centre médical actif · Taher, Jijel
+    </div>
+    <h1>Votre santé entre <span>de bonnes mains</span></h1>
+    <p>Clinique Al-Shifa vous offre des soins médicaux de qualité avec une équipe de médecins expérimentés. Réservez votre rendez-vous en ligne, facilement.</p>
+    <div class="hero-actions">
+      <a href="#rdv" class="btn btn-white btn-lg"><i class="ti ti-calendar-plus"></i> Réserver un RDV</a>
+      <a href="#doctors" class="btn btn-lg" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)">
+        <i class="ti ti-stethoscope"></i> Nos médecins
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-val" id="statPatients">—</div>
+        <div class="hero-stat-label">Patients satisfaits</div>
+      </div>
+      <div>
+        <div class="hero-stat-val" id="statSpec">—</div>
+        <div class="hero-stat-label">Spécialités</div>
+      </div>
+      <div>
+        <div class="hero-stat-val">10+</div>
+        <div class="hero-stat-label">Ans d'expérience</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO CARD — données réelles depuis /api/public/today-appointments -->
+  <div class="hero-visual">
+    <div class="hero-card">
+      <div class="hero-card-header">
+        <div class="hero-card-title">Rendez-vous du jour</div>
+        <div class="hero-card-date" id="heroDate"></div>
+      </div>
+      <!-- Skeleton affiché pendant le chargement -->
+      <div id="todayAppts">
+        <div class="appt-item" style="opacity:.5">
+          <div class="appt-dot" style="background:#94A3B8"></div>
+          <div class="appt-info">
+            <div class="skel" style="width:110px;height:10px;margin-bottom:5px"></div>
+            <div class="skel" style="width:75px;height:8px"></div>
+          </div>
+          <div class="skel" style="width:34px;height:10px"></div>
+        </div>
+        <div class="appt-item" style="opacity:.3">
+          <div class="appt-dot" style="background:#94A3B8"></div>
+          <div class="appt-info">
+            <div class="skel" style="width:90px;height:10px;margin-bottom:5px"></div>
+            <div class="skel" style="width:60px;height:8px"></div>
+          </div>
+          <div class="skel" style="width:34px;height:10px"></div>
+        </div>
+      </div>
+      <div class="hero-card-footer">
+        <span id="apptCount">Chargement...</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="live-dot"></div>
+          <span style="font-size:11px;color:rgba(255,255,255,.6)">En ligne</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECIALTIES -->
+<section class="specialties" id="specialties">
+  <div class="section-center">
+    <div class="section-label">Nos spécialités</div>
+    <div class="section-title">Des soins complets pour toute la famille</div>
+    <div class="section-sub">Notre équipe pluridisciplinaire couvre l'ensemble des spécialités médicales.</div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-card"><div class="spec-icon" style="background:#EFF6FF;color:#2563EB"><i class="ti ti-stethoscope"></i></div><div class="spec-name">Médecine Générale</div><div class="spec-desc">Consultations, bilan de santé, maladies courantes</div></div>
+    <div class="spec-card"><div class="spec-icon" style="background:#ECFDF5;color:#059669"><i class="ti ti-heart"></i></div><div class="spec-name">Cardiologie</div><div class="spec-desc">ECG, suivi cardiaque, hypertension</div></div>
+    <div class="spec-card"><div class="spec-icon" style="background:#FEF2F2;color:#DC2626"><i class="ti ti-baby-carriage"></i></div><div class="spec-name">Pédiatrie</div><div class="spec-desc">Soins pour nourrissons, enfants et adolescents</div></div>
+    <div class="spec-card"><div class="spec-icon" style="background:#FFFBEB;color:#D97706"><i class="ti ti-bone"></i></div><div class="spec-name">Orthopédie</div><div class="spec-desc">Traumatismes, douleurs articulaires, rééducation</div></div>
+    <div class="spec-card"><div class="spec-icon" style="background:#F5F3FF;color:#7C3AED"><i class="ti ti-brain"></i></div><div class="spec-name">Neurologie</div><div class="spec-desc">Migraines, vertiges, troubles nerveux</div></div>
+    <div class="spec-card"><div class="spec-icon" style="background:#FFF1F2;color:#E11D48"><i class="ti ti-eye"></i></div><div class="spec-name">Ophtalmologie</div><div class="spec-desc">Examen de la vue, lunettes, maladies oculaires</div></div>
+    <div class="spec-card"><div class="spec-icon" style="background:#F0FDF4;color:#16A34A"><i class="ti ti-tooth"></i></div><div class="spec-name">Dentisterie</div><div class="spec-desc">Soins dentaires, détartrage, extraction</div></div>
+    <div class="spec-card"><div class="spec-icon" style="background:#FFF7ED;color:#EA580C"><i class="ti ti-flask"></i></div><div class="spec-name">Analyses Médicales</div><div class="spec-desc">Laboratoire sur place, résultats rapides</div></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-center">
+    <div class="section-label">Comment ça marche</div>
+    <div class="section-title">Réservez votre RDV en 3 étapes</div>
+    <div class="section-sub">Simple, rapide et disponible 24h/24 depuis votre téléphone ou ordinateur.</div>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-title">Créez votre compte</div>
+      <div class="step-desc">Inscrivez-vous gratuitement sur notre plateforme en quelques secondes.</div>
+      <a href="../index.html" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--primary);font-weight:600">S'inscrire <i class="ti ti-arrow-right" style="font-size:11px"></i></a>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-title">Choisissez un médecin</div>
+      <div class="step-desc">Parcourez nos spécialistes et leurs disponibilités en temps réel.</div>
+      <a href="#doctors" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--primary);font-weight:600">Voir les médecins <i class="ti ti-arrow-right" style="font-size:11px"></i></a>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-title">Confirmez & venez</div>
+      <div class="step-desc">Sélectionnez votre créneau et présentez-vous à la clinique.</div>
+      <a href="#rdv" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--primary);font-weight:600">Prendre RDV <i class="ti ti-arrow-right" style="font-size:11px"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BANNER — données réelles depuis /api/public/stats -->
+<div class="stats-banner">
+  <div class="stats-inner">
+    <div class="stat-item"><div class="stat-val" id="bannerPatients">500+</div><div class="stat-label">Patients traités</div></div>
+    <div class="stat-item"><div class="stat-val" id="bannerDoctors">12</div><div class="stat-label">Médecins spécialistes</div></div>
+    <div class="stat-item"><div class="stat-val">98%</div><div class="stat-label">Satisfaction patient</div></div>
+    <div class="stat-item"><div class="stat-val">10+</div><div class="stat-label">Années d'expérience</div></div>
+  </div>
+</div>
+
+<!-- DOCTORS — données réelles depuis /api/public/doctors -->
+<section class="doctors" id="doctors">
+  <div class="section-center">
+    <div class="section-label">Notre équipe</div>
+    <div class="section-title">Des médecins expérimentés à votre service</div>
+    <div class="section-sub">Une équipe pluridisciplinaire dédiée à votre santé.</div>
+  </div>
+  <div class="doctors-grid" id="doctorsGrid">
+    <!-- Skeleton cards -->
+    <div class="doctor-card" style="opacity:.5">
+      <div style="width:68px;height:68px;border-radius:50%;background:var(--border);margin:0 auto 12px" class="skel"></div>
+      <div class="skel" style="width:140px;height:14px;margin:0 auto 8px;border-radius:4px"></div>
+      <div class="skel" style="width:100px;height:11px;margin:0 auto;border-radius:4px"></div>
+    </div>
+    <div class="doctor-card" style="opacity:.3">
+      <div style="width:68px;height:68px;border-radius:50%;background:var(--border);margin:0 auto 12px" class="skel"></div>
+      <div class="skel" style="width:140px;height:14px;margin:0 auto 8px;border-radius:4px"></div>
+      <div class="skel" style="width:100px;height:11px;margin:0 auto;border-radius:4px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY US -->
+<section id="why">
+  <div class="why-grid">
+    <div>
+      <div class="section-label">Pourquoi nous choisir</div>
+      <div class="section-title">Une clinique moderne au service de votre santé</div>
+      <div class="why-list">
+        <div class="why-item"><div class="why-icon" style="background:#EFF6FF;color:#2563EB"><i class="ti ti-calendar-check"></i></div><div class="why-text"><h4>Réservation en ligne 24h/24</h4><p>Prenez RDV à tout moment depuis votre mobile ou ordinateur.</p></div></div>
+        <div class="why-item"><div class="why-icon" style="background:#ECFDF5;color:#059669"><i class="ti ti-clipboard-heart"></i></div><div class="why-text"><h4>Dossier médical numérique</h4><p>Consultez vos ordonnances et historique depuis votre espace patient.</p></div></div>
+        <div class="why-item"><div class="why-icon" style="background:#FFFBEB;color:#D97706"><i class="ti ti-shield-check"></i></div><div class="why-text"><h4>Équipements modernes</h4><p>Matériel médical de dernière génération pour un diagnostic précis.</p></div></div>
+        <div class="why-item"><div class="why-icon" style="background:#FEF2F2;color:#DC2626"><i class="ti ti-ambulance"></i></div><div class="why-text"><h4>Urgences médicales</h4><p>Service d'urgence disponible pour les cas nécessitant une prise en charge immédiate.</p></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="why-visual">
+        <div class="why-visual-title">Horaires d'ouverture</div>
+        <div class="hours-row"><span class="hours-day">Samedi — Mercredi</span><span class="hours-time">08:00 — 20:00</span><span class="hours-badge" style="background:#ECFDF5;color:#059669">Ouvert</span></div>
+        <div class="hours-row"><span class="hours-day">Jeudi</span><span class="hours-time">08:00 — 13:00</span><span class="hours-badge" style="background:#FFFBEB;color:#D97706">Matin</span></div>
+        <div class="hours-row"><span class="hours-day">Vendredi</span><span class="hours-time">—</span><span class="hours-badge" style="background:#FEF2F2;color:#DC2626">Fermé</span></div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><i class="ti ti-phone" style="color:var(--primary);font-size:15px"></i><span style="font-size:14px;font-weight:600">+213 034 000 000</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><i class="ti ti-map-pin" style="color:var(--primary);font-size:15px"></i><span style="font-size:13px;color:var(--text-sub)">Rue Principale, Taher, Jijel, Algérie</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><i class="ti ti-mail" style="color:var(--primary);font-size:15px"></i><span style="font-size:13px;color:var(--text-sub)">contact@clinique-alshifa.dz</span></div>
+        </div>
+        <a href="../index.html" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px"><i class="ti ti-calendar-plus"></i> Prendre rendez-vous</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials" id="avis">
+  <div class="section-center">
+    <div class="section-label">Avis patients</div>
+    <div class="section-title">Ce que disent nos patients</div>
+    <div class="section-sub">Des centaines de patients nous font confiance chaque année.</div>
+  </div>
+  <div class="reviews-grid">
+    <div class="review-card"><div class="stars">★★★★★</div><div class="review-text">"Service excellent, le Dr. Benali est très professionnel. La réservation en ligne m'a fait gagner beaucoup de temps."</div><div class="reviewer"><div class="reviewer-avatar">MK</div><div><div class="reviewer-name">Mohammed K.</div><div class="reviewer-date">Il y a 2 semaines</div></div></div></div>
+    <div class="review-card"><div class="stars">★★★★★</div><div class="review-text">"La clinique est propre et moderne. J'ai pu consulter le Dr. Mansouri pour mon fils sans attendre. Très satisfaite."</div><div class="reviewer"><div class="reviewer-avatar">FH</div><div><div class="reviewer-name">Fatima H.</div><div class="reviewer-date">Il y a 1 mois</div></div></div></div>
+    <div class="review-card"><div class="stars">★★★★☆</div><div class="review-text">"Bon accueil, personnel compétent. L'application permet de suivre son rendez-vous facilement. Je recommande."</div><div class="reviewer"><div class="reviewer-avatar">AB</div><div><div class="reviewer-name">Amine B.</div><div class="reviewer-date">Il y a 3 semaines</div></div></div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="rdv">
+  <h2>Prenez soin de votre santé dès aujourd'hui</h2>
+  <p>Réservez votre consultation en quelques clics. Notre équipe est prête à vous accueillir.</p>
+  <div class="cta-actions">
+    <a href="../index.html" class="btn btn-white btn-lg"><i class="ti ti-user-plus"></i> Créer mon compte patient</a>
+    <a href="../index.html" class="btn btn-lg" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)"><i class="ti ti-login"></i> J'ai déjà un compte</a>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-grid">
+    <div>
+      <div class="section-label">Contact</div>
+      <div class="section-title">Nous sommes là pour vous</div>
+      <div class="section-sub">Une question ? N'hésitez pas à nous contacter.</div>
+      <div class="contact-info">
+        <div class="contact-item"><div class="contact-icon"><i class="ti ti-map-pin"></i></div><div><h4>Adresse</h4><p>Rue Principale, Taher, Jijel<br>Algérie — 18200</p></div></div>
+        <div class="contact-item"><div class="contact-icon"><i class="ti ti-phone"></i></div><div><h4>Téléphone</h4><p>+213 034 000 000<br>+213 0555 000 000</p></div></div>
+        <div class="contact-item"><div class="contact-icon"><i class="ti ti-mail"></i></div><div><h4>Email</h4><p>contact@clinique-alshifa.dz</p></div></div>
+        <div class="contact-item"><div class="contact-icon"><i class="ti ti-clock"></i></div><div><h4>Horaires</h4><p>Sam — Mer : 08h00 – 20h00<br>Jeu : 08h00 – 13h00</p></div></div>
+      </div>
+    </div>
+    <div class="contact-form">
+      <h3>Envoyer un message</h3>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nom complet</label><input class="form-control" placeholder="Ahmed Bensalem"></div>
+        <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" placeholder="0555 000 000"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" placeholder="vous@email.com"></div>
+      <div class="form-group"><label class="form-label">Sujet</label><select class="form-control"><option>Demande de rendez-vous</option><option>Renseignements généraux</option><option>Urgence médicale</option><option>Autre</option></select></div>
+      <div class="form-group"><label class="form-label">Message</label><textarea class="form-control" rows="4" placeholder="Votre message ici..."></textarea></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="sendMsg(this)"><i class="ti ti-send"></i> Envoyer le message</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div class="nav-logo-icon"><i class="ti ti-heart-rate-monitor"></i></div>
+        <div><div style="font-size:14px;font-weight:700;color:#fff">Clinique Al-Shifa</div><div style="font-size:11px;color:rgba(255,255,255,.45)">Centre Médical · Jijel</div></div>
+      </div>
+      <div class="footer-desc">Votre santé est notre priorité. Des soins médicaux de qualité dans un environnement moderne et bienveillant.</div>
+    </div>
+    <div class="footer-col">
+      <h4>Navigation</h4>
+      <a href="#specialties">Spécialités</a><a href="#doctors">Médecins</a>
+      <a href="#how">Comment ça marche</a><a href="#avis">Avis patients</a><a href="#contact">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Espace Patient</h4>
+      <a href="../index.html">Se connecter</a><a href="../index.html">Créer un compte</a>
+      <a href="../index.html">Mes rendez-vous</a><a href="../index.html">Mon profil</a>
+    </div>
+    <div class="footer-col">
+      <h4>Espace Staff</h4>
+      <a href="../index.html">Connexion staff</a>
+      <a href="dashboard.html">Tableau de bord</a>
+      <a href="patients.html">Patients</a>
+      <a href="appointments.html">Rendez-vous</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Clinique Al-Shifa · Taher, Jijel, Algérie</span>
+    <span>Développé par <a href="https://github.com/yazidbousbia-dev" style="color:#60A5FA">Yazid Bousbia</a></span>
+  </div>
+</footer>
+
+<script>
+// ── CONFIG ──
+// landing.html est dans pages/ → l'API est sur le même serveur Laravel
+const API = 'http://localhost:8000/api';
+
+// ── HELPERS ──
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+function initials(name){
+  return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+// ── NAVBAR: si déjà connecté → changer le bouton ──
+(function checkAuth(){
+  const token = localStorage.getItem('clinic_token');
+  const user  = JSON.parse(localStorage.getItem('clinic_user')||'null');
+  const btn   = document.getElementById('navLoginBtn');
+  if(token && user && btn){
+    btn.innerHTML = '<i class="ti ti-layout-dashboard"></i> Mon espace';
+    btn.href = ['admin','secretary','doctor'].includes(user.role) ? 'dashboard.html' : 'profile.html';
+    btn.classList.replace('btn-outline','btn-primary');
+  }
+})();
+
+// ── DATE DU JOUR ──
+document.getElementById('heroDate').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short'});
+
+// ── Mواعيد اليوم depuis /api/public/today-appointments ──
+(async function loadTodayAppts(){
+  const dotColor = { confirmed:'#34D399', pending:'#FBBF24', completed:'#94A3B8' };
+
+  function fallback(){
+    document.getElementById('todayAppts').innerHTML = `
+      <div class="appt-item"><div class="appt-dot" style="background:#34D399"></div><div class="appt-info"><div class="appt-name">Dr. Ahmed Benali</div><div class="appt-spec">Médecine Générale</div></div><div class="appt-time">09:00</div></div>
+      <div class="appt-item"><div class="appt-dot" style="background:#60A5FA"></div><div class="appt-info"><div class="appt-name">Dr. Sara Mansouri</div><div class="appt-spec">Pédiatrie</div></div><div class="appt-time">10:30</div></div>
+      <div class="appt-item"><div class="appt-dot" style="background:#FBBF24"></div><div class="appt-info"><div class="appt-name">Dr. Karim Ouali</div><div class="appt-spec">Cardiologie</div></div><div class="appt-time">14:00</div></div>`;
+    document.getElementById('apptCount').textContent = 'Système actif';
+  }
+
+  try {
+    const res = await fetch(`${API}/public/today-appointments`);
+    if(!res.ok){ fallback(); return; }
+    const data = await res.json();
+
+    if(!data.length){
+      document.getElementById('todayAppts').innerHTML = `
+        <div style="text-align:center;padding:20px 0;color:rgba(255,255,255,.5);font-size:13px">
+          <div style="font-size:28px;margin-bottom:8px">📅</div>Aucun RDV aujourd'hui
+        </div>`;
+      document.getElementById('apptCount').textContent = "Aucun RDV aujourd'hui";
+      return;
+    }
+
+    document.getElementById('todayAppts').innerHTML = data.map(a=>`
+      <div class="appt-item">
+        <div class="appt-dot" style="background:${dotColor[a.status]||'#94A3B8'}"></div>
+        <div class="appt-info">
+          <div class="appt-name">${esc(a.doctor)}</div>
+          <div class="appt-spec">${esc(a.speciality)}</div>
+        </div>
+        <div class="appt-time">${esc(a.time)}</div>
+      </div>`).join('');
+
+    document.getElementById('apptCount').textContent = `${data.length} RDV aujourd'hui`;
+
+  } catch(e){ fallback(); }
+})();
+
+// ── STATS depuis /api/public/stats ──
+(async function loadStats(){
+  try {
+    const res  = await fetch(`${API}/public/stats`);
+    const data = await res.json();
+    if(data.total_patients){
+      document.getElementById('statPatients').textContent = data.total_patients + '+';
+      document.getElementById('bannerPatients').textContent = data.total_patients + '+';
+    }
+    if(data.total_specialities){
+      document.getElementById('statSpec').textContent = data.total_specialities;
+    }
+    if(data.total_doctors){
+      document.getElementById('bannerDoctors').textContent = data.total_doctors;
+    }
+  } catch(e){
+    document.getElementById('statPatients').textContent = '500+';
+    document.getElementById('statSpec').textContent = '8';
+  }
+})();
+
+// ── DOCTORS depuis /api/public/doctors ──
+(async function loadDoctors(){
+  try {
+    const res     = await fetch(`${API}/public/doctors`);
+    const doctors = await res.json();
+    const grid    = document.getElementById('doctorsGrid');
+
+    if(!doctors.length){ grid.innerHTML = '<div style="color:var(--text-sub);text-align:center;padding:40px;grid-column:1/-1">Aucun médecin disponible</div>'; return; }
+
+    grid.innerHTML = doctors.map(d=>`
+      <div class="doctor-card">
+        <div class="doctor-avatar">${initials(d.name)}</div>
+        <div class="doctor-name">${esc(d.name)}</div>
+        <div class="doctor-spec">${esc(d.speciality)}</div>
+        <div style="margin-bottom:12px">
+          <span class="tag tag-green">Disponible</span>
+        </div>
+        <div class="doctor-fee">Consultation : <strong>${Number(d.consultation_fee||0).toLocaleString('fr-DZ')} DA</strong></div>
+        <a href="../index.html" class="btn btn-primary" style="width:100%;justify-content:center">
+          <i class="ti ti-calendar-plus"></i> Réserver
+        </a>
+      </div>`).join('');
+
+  } catch(e){
+    // Fallback statique si API indisponible
+    document.getElementById('doctorsGrid').innerHTML = `
+      <div class="doctor-card"><div class="doctor-avatar">AB</div><div class="doctor-name">Dr. Ahmed Benali</div><div class="doctor-spec">Médecine Générale</div><div class="doctor-fee">Consultation : <strong>2 000 DA</strong></div><a href="../index.html" class="btn btn-primary" style="width:100%;justify-content:center"><i class="ti ti-calendar-plus"></i> Réserver</a></div>
+      <div class="doctor-card"><div class="doctor-avatar">SM</div><div class="doctor-name">Dr. Sara Mansouri</div><div class="doctor-spec">Pédiatrie</div><div class="doctor-fee">Consultation : <strong>2 500 DA</strong></div><a href="../index.html" class="btn btn-primary" style="width:100%;justify-content:center"><i class="ti ti-calendar-plus"></i> Réserver</a></div>
+      <div class="doctor-card"><div class="doctor-avatar">KO</div><div class="doctor-name">Dr. Karim Ouali</div><div class="doctor-spec">Cardiologie</div><div class="doctor-fee">Consultation : <strong>3 000 DA</strong></div><a href="../index.html" class="btn btn-primary" style="width:100%;justify-content:center"><i class="ti ti-calendar-plus"></i> Réserver</a></div>
+      <div class="doctor-card"><div class="doctor-avatar">NB</div><div class="doctor-name">Dr. Nadia Bouzid</div><div class="doctor-spec">Neurologie</div><div class="doctor-fee">Consultation : <strong>2 800 DA</strong></div><a href="../index.html" class="btn btn-primary" style="width:100%;justify-content:center"><i class="ti ti-calendar-plus"></i> Réserver</a></div>`;
+  }
+})();
+
+// ── MOBILE MENU ──
+function toggleMenu(){
+  const links = document.getElementById('navLinks');
+  const open  = links.style.display === 'flex';
+  links.style.cssText = open ? '' : 'display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:#fff;padding:20px 5%;gap:16px;border-bottom:1px solid #E5E7EB;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.08)';
+}
+document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>{document.getElementById('navLinks').style.cssText=''}));
+
+// ── CONTACT FORM ──
+function sendMsg(btn){
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .7s linear infinite"></i> Envoi...';
+  setTimeout(()=>{
+    btn.innerHTML = '<i class="ti ti-check"></i> Message envoyé !';
+    btn.style.background = '#059669';
+    setTimeout(()=>{ btn.disabled=false; btn.innerHTML='<i class="ti ti-send"></i> Envoyer le message'; btn.style.background=''; },3000);
+  },1500);
+}
+
+// ── SCROLL NAV HIGHLIGHT ──
+window.addEventListener('scroll',()=>{
+  let cur='';
+  document.querySelectorAll('section[id]').forEach(s=>{ if(window.scrollY>=s.offsetTop-90) cur=s.id; });
+  document.querySelectorAll('.nav-links a').forEach(a=>{
+    const h=a.getAttribute('href').replace('#','');
+    a.style.color = h===cur ? 'var(--primary)' : '';
+    a.style.fontWeight = h===cur ? '600' : '500';
+  });
+});
+
+const style=document.createElement('style');
+style.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(style);
+</script>
+</body>
+</html>
