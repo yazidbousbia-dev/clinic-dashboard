@@ -2,7 +2,7 @@
 // Clinic Dashboard — Shared Utilities
 // =============================================
 
-const API_BASE = 'https://clinic-api-production-4fba.up.railway.app';
+const API_BASE = 'https://clinic-api-production-4fba.up.railway.app/api';
 
 // ---- Auth helpers ----
 const Auth = {
